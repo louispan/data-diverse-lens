@@ -37,13 +37,10 @@ resolver: lts-8.17
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location: '/Users/louis/repo/hs/data-diverse'
-  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps:
-- data-diverse-0.6.0.0
+extra-deps: []
 
 # Override default flag values for local packages and extra-deps
 flags: {}
