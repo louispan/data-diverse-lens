@@ -39,12 +39,10 @@ import Data.Diverse.TypeLevel
 -- | @_Many = iso fromMany toMany@
 _Many :: IsMany t xs a => Iso' (Many xs) (t xs a)
 _Many = iso fromMany toMany
-{-# INLINE _Many #-}
 
 -- | @_Many' = iso fromMany' toMany'@
 _Many' :: IsMany Tagged xs a => Iso' (Many xs) a
 _Many' = iso fromMany' toMany'
-{-# INLINE _Many' #-}
 
 -----------------------------------------------------------------------
 
@@ -57,12 +55,10 @@ _Many' = iso fromMany' toMany'
 -- @
 item :: forall x xs. UniqueMember x xs => Lens' (Many xs) x
 item = lens fetch replace
-{-# INLINE item #-}
 
 -- | Polymorphic version of 'item'
 item' :: forall x y xs. UniqueMember x xs => Lens (Many xs) (Many (Replace x y xs)) x y
 item' = lens fetch (replace' @x @y Proxy)
-{-# INLINE item' #-}
 
 
 -- | 'fetchL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
@@ -74,7 +70,6 @@ item' = lens fetch (replace' @x @y Proxy)
 -- @
 itemL :: forall l xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens' (Many xs) x
 itemL p = lens (fetchL p) (replaceL p)
-{-# INLINE itemL #-}
 
 -- | Polymorphic version of 'itemL'
 --
@@ -84,7 +79,6 @@ itemL p = lens (fetchL p) (replaceL p)
 -- @
 itemL' :: forall l y xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens (Many xs) (Many (Replace x y xs)) x y
 itemL' p = lens (fetchL p) (replaceL' p)
-{-# INLINE itemL' #-}
 
 
 -- | 'fetchN' ('view' 'item') and 'replaceN' ('set' 'item') in 'Lens'' form.
@@ -96,13 +90,11 @@ itemL' p = lens (fetchL p) (replaceL' p)
 -- @
 itemN ::  forall n x xs proxy. MemberAt n x xs => proxy n -> Lens' (Many xs) x
 itemN p = lens (fetchN p) (replaceN p)
-{-# INLINE itemN #-}
 
 
 -- | Polymorphic version of 'itemN'
 itemN' ::  forall n x y xs proxy. MemberAt n x xs => proxy n -> Lens (Many xs) (Many (ReplaceIndex n y xs)) x y
 itemN' p = lens (fetchN p) (replaceN' @n @x @y p)
-{-# INLINE itemN' #-}
 
 -----------------------------------------------------------------------
 
@@ -123,7 +115,6 @@ project
        (Select smaller larger, Amend smaller larger)
     => Lens' (Many larger) (Many smaller)
 project = lens select amend
-{-# INLINE project #-}
 
 -- | Polymorphic version of project'
 project'
@@ -131,7 +122,6 @@ project'
        (Select smaller larger, Amend' smaller smaller' larger zipped)
     => Lens (Many larger) (Many (Replaces smaller smaller' larger)) (Many smaller) (Many smaller')
 project' = lens select (amend' @smaller @smaller' Proxy)
-{-# INLINE project' #-}
 
 -- | 'selectL' ('view' 'projectL') and 'amendL' ('set' 'projectL') in 'Lens'' form.
 --
@@ -150,7 +140,6 @@ projectL
        , UniqueLabels ls larger)
     => proxy ls -> Lens' (Many larger) (Many smaller)
 projectL p = lens (selectL p) (amendL p)
-{-# INLINE projectL #-}
 
 -- | Polymorphic version of projectL'
 --
@@ -168,7 +157,6 @@ projectL'
        , UniqueLabels ls larger)
     => proxy ls -> Lens (Many larger) (Many (Replaces smaller smaller' larger)) (Many smaller) (Many smaller')
 projectL' p = lens (selectL p) (amendL' p)
-{-# INLINE projectL' #-}
 
 -- | 'selectN' ('view' 'projectN') and 'amendN' ('set' 'projectN') in 'Lens'' form.
 --
@@ -187,7 +175,6 @@ projectN
        (SelectN ns smaller larger, AmendN ns smaller larger)
     => proxy ns -> Lens' (Many larger) (Many smaller)
 projectN p = lens (selectN p) (amendN p)
-{-# INLINE projectN #-}
 
 -- | Polymorphic version of 'projectN'
 projectN'
@@ -195,4 +182,3 @@ projectN'
        (SelectN ns smaller larger, AmendN' ns smaller smaller' larger zipped)
     => proxy ns -> Lens (Many larger) (Many (ReplacesIndex ns smaller' larger)) (Many smaller) (Many smaller')
 projectN' p = lens (selectN p) (amendN' p)
-{-# INLINE projectN' #-}

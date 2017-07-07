@@ -42,7 +42,6 @@ hush = either (const Nothing) Just
 -- @
 facet :: forall x xs. (UniqueMember x xs) => Prism' (Which xs) x
 facet = prism' pick (hush . trial)
-{-# INLINE facet #-}
 
 -- | 'pickL' ('review' 'facetL') and 'trialL' ('preview' 'facetL') in 'Prism'' form.
 --
@@ -53,7 +52,6 @@ facet = prism' pick (hush . trial)
 -- @
 facetL :: forall l xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
 facetL p = prism' (pickL p) (hush . trialL p)
-{-# INLINE facetL #-}
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
@@ -68,7 +66,6 @@ facetL p = prism' (pickL p) (hush . trialL p)
 -- @
 facetN :: forall n xs x proxy. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
 facetN p = prism' (pickN p) (hush . trialN p)
-{-# INLINE facetN #-}
 
 ------------------------------------------------------------------
 
@@ -89,8 +86,6 @@ inject
        )
     => Prism' (Which tree) (Which branch)
 inject = prism' diversify (hush . reinterpret)
-{-# INLINE inject #-}
-
 
 -- | 'diversifyL' ('review' 'injectL') and 'reinterpretL' ('preview' 'injectL') in 'Prism'' form.
 --
@@ -112,7 +107,6 @@ injectL
        )
     => proxy ls -> Prism' (Which tree) (Which branch)
 injectL p = prism' (diversifyL p) (hush . reinterpretL p)
-{-# INLINE injectL #-}
 
 -- | 'diversifyN' ('review' 'injectN') and 'reinterpretN' ('preview' 'injectN') in 'Prism'' form.
 --
@@ -130,4 +124,3 @@ injectN
        )
     => proxy indices -> Prism' (Which tree) (Which branch)
 injectN p = prism' (diversifyN p) (reinterpretN p)
-{-# INLINE injectN #-}
