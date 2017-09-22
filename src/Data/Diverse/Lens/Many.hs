@@ -118,8 +118,8 @@ project = lens select amend
 
 -- | Polymorphic version of project'
 project'
-    :: forall smaller smaller' larger zipped.
-       (Select smaller larger, Amend' smaller smaller' larger zipped)
+    :: forall smaller smaller' larger.
+       (Select smaller larger, Amend' smaller smaller' larger)
     => Lens (Many larger) (Many (Replaces smaller smaller' larger)) (Many smaller) (Many smaller')
 project' = lens select (amend' @smaller @smaller' Proxy)
 
@@ -149,9 +149,9 @@ projectL p = lens (selectL p) (amendL p)
 --     False './' True './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Changed" False './' 'nil'
 -- @
 projectL'
-    :: forall ls smaller smaller' larger proxy zipped.
+    :: forall ls smaller smaller' larger proxy.
        ( Select smaller larger
-       , Amend' smaller smaller' larger zipped
+       , Amend' smaller smaller' larger
        , smaller ~ KindsAtLabels ls larger
        , IsDistinct ls
        , UniqueLabels ls larger)
@@ -178,7 +178,7 @@ projectN p = lens (selectN p) (amendN p)
 
 -- | Polymorphic version of 'projectN'
 projectN'
-    :: forall ns smaller smaller' larger proxy zipped.
-       (SelectN ns smaller larger, AmendN' ns smaller smaller' larger zipped)
+    :: forall ns smaller smaller' larger proxy.
+       (SelectN ns smaller larger, AmendN' ns smaller smaller' larger)
     => proxy ns -> Lens (Many larger) (Many (ReplacesIndex ns smaller' larger)) (Many smaller) (Many smaller')
 projectN' p = lens (selectN p) (amendN' p)
