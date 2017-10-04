@@ -44,7 +44,7 @@ facet = prism' pick trial'
 --     x = 'preview' ('facetL' \@Bar Proxy) y
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
-facetL :: forall l xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
+facetL :: forall l x xs proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
 facetL p = prism' (pickL p) (trialL' p)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
@@ -58,7 +58,7 @@ facetL p = prism' (pickL p) (trialL' p)
 --     x = 'preview' ('facetN' (Proxy \@4)) y -- 'trialN'
 -- x \`shouldBe` (Just 5)
 -- @
-facetN :: forall n xs x proxy. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
+facetN :: forall n x xs proxy. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
 facetN p = prism' (pickN p) (trialN' p)
 
 ------------------------------------------------------------------
@@ -75,7 +75,7 @@ facetN p = prism' (pickN p) (trialN' p)
 -- @
 inject
     :: forall branch tree.
-       ( Diversify tree branch
+       ( Diversify branch tree
        , Reinterpret' branch tree
        )
     => Prism' (Which tree) (Which branch)
@@ -93,7 +93,7 @@ inject = prism' diversify reinterpret'
 -- @
 injectL
     :: forall ls branch tree proxy.
-       ( Diversify tree branch
+       ( Diversify branch tree
        , Reinterpret' branch tree
        , branch ~ KindsAtLabels ls tree
        , UniqueLabels ls tree
@@ -113,7 +113,7 @@ injectL p = prism' (diversifyL p) (reinterpretL' p)
 -- @
 injectN
     :: forall indices branch tree proxy.
-       ( DiversifyN indices tree branch
+       ( DiversifyN indices branch tree
        , ReinterpretN' indices branch tree
        )
     => proxy indices -> Prism' (Which tree) (Which branch)

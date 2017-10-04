@@ -56,8 +56,8 @@ spec = do
             y' `shouldBe` Just (pick (5 :: Int))
 
         it "can be 'diversifyL'ed and 'reinterpretedL' by label with 'injectL'" $ do
-            let t = pick @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool] (5 :: Tagged Bar Int)
-                b = pick @'[Tagged Foo Bool, Tagged Bar Int] (5 :: Tagged Bar Int)
+            let t = pick @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool] (5 :: Tagged Bar Int)
+                b = pick @_ @'[Tagged Foo Bool, Tagged Bar Int] (5 :: Tagged Bar Int)
                 t' = review (injectL @[Foo, Bar] @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool] Proxy) b
                 b' = preview (injectL @[Foo, Bar] Proxy) t'
             t `shouldBe` t'
