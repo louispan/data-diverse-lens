@@ -68,7 +68,7 @@ item' = lens fetch (replace' @x @y Proxy)
 -- x '^.' 'itemL' \@Foo Proxy \`shouldBe` Tagged \@Foo False
 -- (x '&' 'itemL' \@Foo Proxy '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
-itemL :: forall l xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens' (Many xs) x
+itemL :: forall l x xs proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens' (Many xs) x
 itemL p = lens (fetchL p) (replaceL p)
 
 -- | Polymorphic version of 'itemL'
@@ -77,7 +77,7 @@ itemL p = lens (fetchL p) (replaceL p)
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
 -- (x '&' itemL' \@Foo Proxy '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
-itemL' :: forall l y xs x proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens (Many xs) (Many (Replace x y xs)) x y
+itemL' :: forall l x y xs proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens (Many xs) (Many (Replace x y xs)) x y
 itemL' p = lens (fetchL p) (replaceL' p)
 
 
