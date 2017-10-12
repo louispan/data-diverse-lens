@@ -8,11 +8,14 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
-* pre 0.3.0.0
-  - Initial version represented as (Int, Data.Map Int Any)
+* 0.4.0.1
+  - included data-diverse 1.0 in the upper bounds
+
+* 0.4.0.0
+  - Changed type variable ordering of 'itemL' and 'itemL', so it's consistently 'x', 'y', then 'xs'
 
 * 0.3.0.0
   - Changed type variable ordering of 'facetL' and 'facetN', so it's consistently 'x' then 'xs'
 
-* 0.4.0.0
-  - Changed type variable ordering of 'itemL' and 'itemL', so it's consistently 'x', 'y', then 'xs'
+* pre 0.3.0.0
+  - Initial version represented as (Int, Data.Map Int Any)
