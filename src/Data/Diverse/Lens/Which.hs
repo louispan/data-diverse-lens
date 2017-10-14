@@ -44,7 +44,7 @@ facet = prism' pick trial'
 --     x = 'preview' ('facetL' \@Bar Proxy) y
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
-facetL :: forall l x xs proxy. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
+facetL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
 facetL p = prism' (pickL p) (trialL' p)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
@@ -58,7 +58,7 @@ facetL p = prism' (pickL p) (trialL' p)
 --     x = 'preview' ('facetN' (Proxy \@4)) y -- 'trialN'
 -- x \`shouldBe` (Just 5)
 -- @
-facetN :: forall n x xs proxy. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
+facetN :: forall n xs proxy x. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
 facetN p = prism' (pickN p) (trialN' p)
 
 ------------------------------------------------------------------
