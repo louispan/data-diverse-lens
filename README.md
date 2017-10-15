@@ -9,7 +9,7 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 # Changelog
 
 * 0.5.0.0
-  - min bounds: data-diverse >=1.2, lens >= 4.15.2
+  - min bounds: data-diverse >=1.2.1
   - Rerranged type variable for xxxL and xxxN functions so that the
     @x@ inferrred from label @l@ or index @n@ is after @proxy@.
     - This affects `item[L|N]`, `item[L|N]'`, `replace[L|N]'`, `facet[L|N]`
