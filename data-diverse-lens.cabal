@@ -20,6 +20,9 @@ library
   exposed-modules:     Data.Diverse.Lens
                        Data.Diverse.Lens.Many
                        Data.Diverse.Lens.Which
+                       Data.Diverse.Profunctor
+                       Data.Diverse.Profunctor.Many
+                       Data.Diverse.Profunctor.Which
   build-depends:       base >= 4.7 && < 5
                      , data-diverse >= 1.2.0.1 && < 2
                      , tagged >= 0.8.5 && < 1

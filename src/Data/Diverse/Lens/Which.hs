@@ -1,7 +1,6 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Diverse.Lens.Which (
       -- * Single type
@@ -15,11 +14,6 @@ module Data.Diverse.Lens.Which (
     , inject
     , injectL
     , injectN
-
-      -- * Profunctor Choice
-    , faceted
-    , faceted'
-    , injected
     ) where
 
 import Control.Lens
@@ -123,34 +117,3 @@ injectN
        )
     => proxy indices -> Prism' (Which tree) (Which branch)
 injectN p = prism' (diversifyN p) (reinterpretN' p)
-
--- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which'
-faceted
-    :: ( Profunctor w
-       , Choice w
-       , UniqueMember a a'
-       , UniqueMember b b'
-       , Diversify (Complement a' '[a]) b'
-       )
-    => w a b -> w (Which a') (Which b')
-faceted w = dimap trial (either diversify pick) (right' w)
-
--- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
-faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
-faceted' w = dimap trial (either impossible pick) (right' w)
-
--- | Like 'Choice' or 'ArrowChoice' but lifting from 'Which' into another type of 'Which'
-injected
-    :: ( Profunctor w
-       , Choice w
-       , Reinterpret a a'
-       , Diversify b (AppendUnique b (Complement a' a))
-       , Diversify (Complement a' a) (AppendUnique b (Complement a' a))
-       -- all of @a@ is used, ie @a'@ is not a subset of @a@
-       -- this ensures that all of '[a] is used to avoid surprises (eg. of noop behaviour)
-       , Complement a a' ~ '[]
-       )
-    => proxy a'
-    -> w (Which a) (Which b)
-    -> w (Which a') (Which (AppendUnique b (Complement a' a)))
-injected _ w = dimap reinterpret (either diversify diversify) (right' w)

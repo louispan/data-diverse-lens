@@ -1,6 +1,4 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -28,19 +26,12 @@ module Data.Diverse.Lens.Many (
     , projectL'
     , projectN
     , projectN'
-
-      -- * Profunctor Strong
-    , itemized
-    , itemized'
-    , projected
-
     ) where
 
 import Control.Lens
 import Data.Tagged
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
-import Data.Profunctor
 import Data.Proxy
 
 -- | @_Many = iso fromMany toMany@
@@ -189,27 +180,3 @@ projectN'
        (SelectN ns smaller larger, AmendN' ns smaller smaller' larger)
     => proxy ns -> Lens (Many larger) (Many (ReplacesIndex ns smaller' larger)) (Many smaller) (Many smaller')
 projectN' p = lens (selectN p) (amendN' p)
-
--- | Like 'Strong' or 'Arrow' but lifting into 'Many'
-itemized
-    :: forall a' w a b. ( Profunctor w
-       , Strong w
-       , UniqueMember a a'
-       , UniqueMember b (Replace a b a')
-       )
-    => w a b -> w (Many a') (Many (Replace a b a'))
-itemized w = dimap (\c -> (fetch c, c)) (\(b, c) -> replace' (Proxy @a) c b) (first' w)
-
--- | Like 'Strong' or 'Arrow' but lifting into 'Many' of one type
-itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])
-itemized' w = dimap fetch single w
-
--- | Like 'Strong' or 'Arrow' but lifting from a 'Many' to a 'Many' of another type
-projected
-    :: forall a' proxy w a b. ( Profunctor w
-       , Strong w
-       , Select a a'
-       , Amend' a b a'
-       )
-    => proxy a' -> w (Many a) (Many b) -> w (Many a') (Many (Replaces a b a'))
-projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend' (Proxy @a) c b) (first' w)
