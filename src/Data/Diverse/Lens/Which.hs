@@ -144,13 +144,13 @@ injected
     :: ( Profunctor w
        , Choice w
        , Reinterpret a a'
-       , Diversify b (Append b (Complement a' a))
-       , Diversify (Complement a' a) (Append b (Complement a' a))
+       , Diversify b (AppendUnique b (Complement a' a))
+       , Diversify (Complement a' a) (AppendUnique b (Complement a' a))
        -- all of @a@ is used, ie @a'@ is not a subset of @a@
        -- this ensures that all of '[a] is used to avoid surprises (eg. of noop behaviour)
        , Complement a a' ~ '[]
        )
     => proxy a'
     -> w (Which a) (Which b)
-    -> w (Which a') (Which (Append b (Complement a' a)))
+    -> w (Which a') (Which (AppendUnique b (Complement a' a)))
 injected _ w = dimap reinterpret (either diversify diversify) (right' w)
