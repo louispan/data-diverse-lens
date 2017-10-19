@@ -8,6 +8,10 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 0.5.1.0
+  - Added faceted, injected, itemized, projected which is analogous to Profunctor Choice and Strong
+    but using 'Which' and 'Many'
+
 * 0.5.0.0
   - min bounds: data-diverse >=1.2.1
   - Rerranged type variable for xxxL and xxxN functions so that the
