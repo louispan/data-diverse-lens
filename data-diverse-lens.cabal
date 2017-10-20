@@ -24,13 +24,13 @@ library
                        Data.Diverse.Profunctor.Many
                        Data.Diverse.Profunctor.Which
   build-depends:       base >= 4.7 && < 5
-                     , data-diverse >= 1.2.0.1 && < 2
-                     , tagged >= 0.8.5 && < 1
-                     , profunctors >= 5.2 && < 6
+                     , data-diverse >= 1.2.0.1
+                     , tagged >= 0.8.5
+                     , profunctors >= 5.2
   if impl(ghc >= 8.2.0)
-    build-depends: lens >= 4.15.2 && < 5
+    build-depends: lens >= 4.15.2
   else
-    build-depends: lens >= 4 && < 5
+    build-depends: lens >= 4
   ghc-options:         -Wall
   default-language:    Haskell2010
 
@@ -41,14 +41,14 @@ test-suite data-diverse-lens-test
   other-modules:       Data.Diverse.Lens.ManySpec
                        Data.Diverse.Lens.WhichSpec
   build-depends:       base
-                     , data-diverse >= 1.2.0.1 && < 2
+                     , data-diverse >= 1.2.0.1
                      , data-diverse-lens
-                     , hspec >= 2 && < 3
-                     , tagged >= 0.8.5 && < 1
+                     , hspec >= 2
+                     , tagged >= 0.8.5
   if impl(ghc >= 8.2.0)
-    build-depends: lens >= 4.15.2 && < 5
+    build-depends: lens >= 4.15.2
   else
-    build-depends: lens >= 4 && < 5
+    build-depends: lens >= 4
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   default-language:    Haskell2010
 
