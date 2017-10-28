@@ -24,7 +24,7 @@ library
                        Data.Diverse.Profunctor.Many
                        Data.Diverse.Profunctor.Which
   build-depends:       base >= 4.7 && < 5
-                     , data-diverse >= 1.2.0.1
+                     , data-diverse >= 1.2.0.3
                      , tagged >= 0.8.5
                      , profunctors >= 5.2
   if impl(ghc >= 8.2.0)
