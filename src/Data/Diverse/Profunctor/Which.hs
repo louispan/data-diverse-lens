@@ -77,8 +77,7 @@ injected _ w = dimap reinterpret (either diversify diversify) (right' w)
 x +||+ y =
     rmap
         (either diversify diversify)
-        (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>>
-         right' y)
+        (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>> right' y)
 infixr 2 +||+ -- like +++
 
 -- | Left-to-right chaining of arrows one after another,  where left over possibilities not handled
