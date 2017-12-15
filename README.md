@@ -8,6 +8,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 0.5.2.0
+  - Added itemTag and facetTag that also tag/untags the field.
+
 * 0.5.1.0
   - Added faceted, injected, itemized, projected, which is analogous to Profunctor Choice and Strong
     but using 'Which' and 'Many'

@@ -8,6 +8,7 @@ module Data.Diverse.Lens.Which (
       -- ** Prism
       facet
     , facetL
+    , facetTag
     , facetN
 
       -- * Multiple types
@@ -20,6 +21,7 @@ module Data.Diverse.Lens.Which (
 import Control.Lens
 import Data.Diverse.Which
 import Data.Diverse.TypeLevel
+import Data.Tagged
 
 -----------------------------------------------------------------
 
@@ -44,8 +46,14 @@ facet = prism' pick trial'
 --     x = 'preview' ('facetL' \@Bar Proxy) y
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
-facetL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Prism' (Which xs) x
+facetL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs)
+    => proxy l -> Prism' (Which xs) x
 facetL p = prism' (pickL p) (trialL' p)
+
+-- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
+facetTag :: forall l xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
+    => proxy l -> Prism' (Which xs) x
+facetTag p = prism' (pickTag p) (trialTag' p)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --

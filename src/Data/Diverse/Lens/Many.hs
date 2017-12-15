@@ -16,6 +16,8 @@ module Data.Diverse.Lens.Many (
     , item'
     , itemL
     , itemL'
+    , itemTag
+    , itemTag'
     , itemN
     , itemN'
 
@@ -67,7 +69,8 @@ item' = lens fetch (replace' @x @y Proxy)
 -- x '^.' 'itemL' \@Foo Proxy \`shouldBe` Tagged \@Foo False
 -- (x '&' 'itemL' \@Foo Proxy '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
-itemL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens' (Many xs) x
+itemL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs)
+    => proxy l -> Lens' (Many xs) x
 itemL p = lens (fetchL p) (replaceL p)
 
 -- | Polymorphic version of 'itemL'
@@ -76,8 +79,19 @@ itemL p = lens (fetchL p) (replaceL p)
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
 -- (x '&' itemL' \@Foo Proxy '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
-itemL' :: forall l y xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => proxy l -> Lens (Many xs) (Many (Replace x y xs)) x y
+itemL' :: forall l y xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs)
+    => proxy l -> Lens (Many xs) (Many (Replace x y xs)) x y
 itemL' p = lens (fetchL p) (replaceL' p)
+
+-- | Variation of 'itemL' that automatically tags and untags the field.
+itemTag :: forall l xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
+    => proxy l -> Lens' (Many xs) x
+itemTag p = lens (fetchTag p) (replaceTag p)
+
+-- | Variation of 'itemL'' that automatically tags and untags the field.
+itemTag' :: forall l y xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
+    => proxy l -> Lens (Many xs) (Many (Replace (Tagged l x) (Tagged l y) xs)) x y
+itemTag' p = lens (fetchTag p) (replaceTag' p)
 
 
 -- | 'fetchN' ('view' 'item') and 'replaceN' ('set' 'item') in 'Lens'' form.

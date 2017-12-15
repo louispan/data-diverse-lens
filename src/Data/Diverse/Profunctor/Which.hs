@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
