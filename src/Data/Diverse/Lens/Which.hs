@@ -1,7 +1,14 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Diverse.Lens.Which (
       -- * Single type
@@ -21,7 +28,9 @@ module Data.Diverse.Lens.Which (
 import Control.Lens
 import Data.Diverse.Which
 import Data.Diverse.TypeLevel
+import Data.Proxy
 import Data.Tagged
+import Data.Generics.Sum
 
 -----------------------------------------------------------------
 
@@ -39,6 +48,14 @@ import Data.Tagged
 facet :: forall x xs. (UniqueMember x xs) => Prism' (Which xs) x
 facet = prism' pick trial'
 
+-- | I'm using "Data.Generics" as the canoical class for AsXXX.
+-- Overlap 'AsType' '_Typed' with the more efficient 'facet'
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} UniqueMember x xs => AsType x (Which xs) where
+    _Typed = facet
+    injectTyped = pick
+    projectTyped = trial'
+
 -- | 'pickL' ('review' 'facetL') and 'trialL'' ('preview' 'facetL'') in 'Prism'' form.
 --
 -- @
@@ -54,6 +71,13 @@ facetL p = prism' (pickL p) (trialL' p)
 facetTag :: forall l xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
     => proxy l -> Prism' (Which xs) x
 facetTag p = prism' (pickTag p) (trialTag' p)
+
+-- | I'm using "Data.Generics" as the canoical class for AsXXX.
+-- Overlap 'AsConstructor' '_Ctor' with the more efficient 'facetTag'
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
+  => AsConstructor l (Which xs) (Which xs) x x where
+    _Ctor = facetTag (Proxy @l)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
@@ -88,6 +112,17 @@ inject
        )
     => Prism' (Which tree) (Which branch)
 inject = prism' diversify reinterpret'
+
+-- | I'm using "Data.Generics" as the canoical class for AsXXX.
+-- Overlap 'AsSubtype' '_Sub' with the more efficient 'inject'
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} (Diversify branch tree, Reinterpret' branch tree)
+  => AsSubtype (Which branch) (Which tree) where
+    _Sub = inject
+    injectSub = diversify
+    projectSub a = case reinterpret' a of
+                       Nothing -> Left a
+                       Just a' -> Right a'
 
 -- | 'diversifyL' ('review' 'injectL') and 'reinterpretL'' ('preview' 'injectL') in 'Prism'' form.
 --

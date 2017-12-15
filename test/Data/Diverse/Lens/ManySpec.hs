@@ -14,6 +14,7 @@ import Data.Diverse.Lens
 import Data.Tagged
 import Data.Typeable
 import Test.Hspec
+import Data.Generics.Product
 
 -- `main` is here so that this module can be run from GHCi on its own.  It is
 -- not needed for automatic spec discovery.
@@ -42,6 +43,16 @@ spec = do
             x ^. item @Char `shouldBe` 'X'
             x ^. item @(Maybe Char) `shouldBe` Just 'O'
 
+        it "has getter/setter lens using 'Data.Generics.typed" $ do
+            let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
+            x ^. typed @Int `shouldBe` 5
+            (x & typed @Int .~ 6) `shouldBe` (6 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
+            x ^. typed @Bool `shouldBe` False
+            (x & typed @Bool .~ True) `shouldBe` (5 :: Int) ./ True ./ 'X' ./ Just 'O' ./ nil
+            x ^. typed @Char `shouldBe` 'X'
+            x ^. typed @(Maybe Char) `shouldBe` Just 'O'
+            x ^. typed @(Maybe Char) `shouldBe` Just 'O'
+
         it "has polymorphic getter/setter lens using 'item''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
             (x & item' @(Maybe Char) .~ Just 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
@@ -58,6 +69,10 @@ spec = do
         it "has polymorphic getter/setter lens using 'itemL''" $ do
             let x = (5 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ nil
             (x & itemL' @Foo Proxy .~ "foo") `shouldBe` (5 :: Int) ./ "foo" ./ Tagged @Bar 'X' ./ nil
+
+        it "has polymorphic getter/setter lens using 'Data.Generics.Product.Fields.field'" $ do
+            let x = (5 :: Int) ./ Tagged @"foo" False ./ Tagged @"bar" 'X' ./ nil
+            (x & field @"foo" .~ "foodata") `shouldBe` (5 :: Int) ./ Tagged @"foo" "foodata" ./ Tagged @"bar" 'X' ./ nil
 
         it "has getter/setter lens for duplicate fields using 'itemN'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
@@ -83,10 +98,25 @@ spec = do
             (x & itemN' (Proxy @4) .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ "Foo" ./ Just 'A' ./ nil
             (x & itemN' (Proxy @5) .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ "Foo" ./ nil
 
+        it "has polymorphic getter/setter lens for duplicate fields using 'Data.Generic.Product.Positions.position'" $ do
+            let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & position @0 .~ "Foo") `shouldBe` "Foo" ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & position @1 .~ "Foo") `shouldBe` (5 :: Int) ./ "Foo" ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & position @2 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ "Foo" ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & position @3 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ "Foo" ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & position @4 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ "Foo" ./ Just 'A' ./ nil
+            (x & position @5 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ "Foo" ./ nil
+
         it "has getter/setter lens for multiple fields using 'project'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
             x ^. (project @'[Int, Maybe Char]) `shouldBe` (5 :: Int) ./ Just 'O' ./ nil
             (x & (project @'[Int, Maybe Char]) .~ ((6 :: Int) ./ Just 'P' ./ nil)) `shouldBe`
+                (6 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
+
+        it "has getter/setter lens for multiple fields using 'Data.Generics.Product.Subtype.super'" $ do
+            let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
+            x ^. (super @(Many '[Int, Maybe Char])) `shouldBe` (5 :: Int) ./ Just 'O' ./ nil
+            (x & (super @(Many '[Int, Maybe Char])) .~ ((6 :: Int) ./ Just 'P' ./ nil)) `shouldBe`
                 (6 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
 
         it "has polymorphic getter/setter lens for multiple fields using 'project'" $ do

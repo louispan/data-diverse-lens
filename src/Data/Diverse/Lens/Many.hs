@@ -1,9 +1,14 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Diverse.Lens.Many (
       -- * Isomorphism
@@ -36,6 +41,7 @@ import Data.Tagged
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Proxy
+import Data.Generics.Product
 
 -- | @_Many = iso fromMany toMany@
 _Many :: IsMany t xs a => Iso' (Many xs) (t xs a)
@@ -61,6 +67,11 @@ item = lens fetch replace
 item' :: forall x y xs. UniqueMember x xs => Lens (Many xs) (Many (Replace x y xs)) x y
 item' = lens fetch (replace' @x @y Proxy)
 
+-- | I'm using "Data.Generics" as the canoical class for HasXXX.
+-- Overlap 'HasType' 'typed' with the more efficient 'item'
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} UniqueMember x xs => HasType x (Many xs) where
+    typed = item
 
 -- | 'fetchL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
@@ -93,6 +104,12 @@ itemTag' :: forall l y xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtL
     => proxy l -> Lens (Many xs) (Many (Replace (Tagged l x) (Tagged l y) xs)) x y
 itemTag' p = lens (fetchTag p) (replaceTag' p)
 
+-- | I'm using "Data.Generics" as the canoical class for HasXXX.
+-- Overlap 'HasField' 'field' with the more efficient 'itemN''
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (Tagged l x) (Tagged l y) xs) =>
+  HasField l (Many xs) (Many ys) x y where
+    field = itemTag' (Proxy @l)
 
 -- | 'fetchN' ('view' 'item') and 'replaceN' ('set' 'item') in 'Lens'' form.
 --
@@ -108,6 +125,13 @@ itemN p = lens (fetchN p) (replaceN p)
 -- | Polymorphic version of 'itemN'
 itemN' ::  forall n y xs proxy x. MemberAt n x xs => proxy n -> Lens (Many xs) (Many (ReplaceIndex n y xs)) x y
 itemN' p = lens (fetchN p) (replaceN' @n @y p)
+
+-- | I'm using "Data.Generics" as the canoical class for HasXXX.
+-- Overlap 'HasPosition' 'position' with the more efficient 'itemN''
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} (MemberAt n x xs, ys ~ ReplaceIndex n y xs) =>
+  HasPosition n (Many xs) (Many ys) x y where
+    position = itemN' (Proxy @n)
 
 -----------------------------------------------------------------------
 
@@ -135,6 +159,13 @@ project'
        (Select smaller larger, Amend' smaller smaller' larger)
     => Lens (Many larger) (Many (Replaces smaller smaller' larger)) (Many smaller) (Many smaller')
 project' = lens select (amend' @smaller @smaller' Proxy)
+
+-- | I'm using "Data.Generics" as the canoical class for HasXXX.
+-- Overlap 'Subtype' 'super' with the more efficient 'project'
+-- Undecidableinstances! Orphan instance!
+instance {-# OVERLAPPING #-} (Select smaller larger, Amend smaller larger) =>
+  Subtype (Many smaller) (Many larger) where
+    super = project
 
 -- | 'selectL' ('view' 'projectL') and 'amendL' ('set' 'projectL') in 'Lens'' form.
 --
