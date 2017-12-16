@@ -44,7 +44,6 @@ import Data.Tagged
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Generics.Product
-import Data.Proxy
 import GHC.TypeLits
 
 -- | @_Many = iso fromMany toMany@
@@ -79,7 +78,7 @@ class HasItem a b s t | s a b -> t, t a b -> s where
     item :: Lens s t a b
 
 instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many ys) where
-    item = lens fetch (replace @x @y Proxy)
+    item = lens fetch (replace @x @y)
 
 -- | 'fetchL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
@@ -89,10 +88,10 @@ instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many
 -- (x '&' 'itemL'' \@Foo Proxy '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
 class HasItemL' (l :: k) a s | s l -> a where
-    itemL' :: proxy l -> Lens' s a
+    itemL' :: Lens' s a
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many xs) where
-    itemL' p = lens (fetchL p) (replaceL' p)
+    itemL' = lens (fetchL @l) (replaceL' @l)
 
 -- | Polymorphic version of 'itemL''
 --
@@ -101,31 +100,31 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many x
 -- (x '&' 'itemL' \@Foo Proxy '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
 class HasItemL (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
-    itemL :: proxy l -> Lens s t a b
+    itemL :: Lens s t a b
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Replace x y xs)
   => HasItemL l x y (Many xs) (Many ys) where
-    itemL p = lens (fetchL p) (replaceL p)
+    itemL = lens (fetchL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags the field.
 class HasItemTag' (l :: k) a s | s l -> a where
-    itemTag' :: proxy l -> Lens' s a
+    itemTag' :: Lens' s a
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => HasItemTag' l x (Many xs) where
-    itemTag' p = lens (fetchTag p) (replaceTag' p)
+    itemTag' = lens (fetchTag @l) (replaceTag' @l)
 
 -- | Variation of 'itemL' that automatically tags and untags the field.
 class HasItemTag (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
-    itemTag :: proxy l -> Lens s t a b
+    itemTag :: Lens s t a b
 
 -- | Make it easy to create an instance of 'itemTag' using 'Data.Generics.Product.Fields'
 -- NB. This is not a default signature for HasItemTag, as this makes GHC think that l must be type 'Symbol'
-genericItemTag :: forall l a b s t proxy. (HasField l s t a b) => proxy l -> Lens s t a b
-genericItemTag _ = field @l
+genericItemTag :: forall l a b s t. (HasField l s t a b) => Lens s t a b
+genericItemTag = field @l
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (Tagged l x) (Tagged l y) xs)
   => HasItemTag l x y (Many xs) (Many ys) where
-    itemTag p = lens (fetchTag p) (replaceTag p)
+    itemTag = lens (fetchTag @l) (replaceTag @l)
 
 -- | 'fetchN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
 --
@@ -135,22 +134,22 @@ instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (T
 -- (x '&' 'itemN'' (Proxy @0) '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
 -- @
 class HasItemN' (n :: Nat) a s | s n -> a where
-    itemN' :: proxy n -> Lens' s a
+    itemN' :: Lens' s a
 
 instance (MemberAt n x xs) => HasItemN' n x (Many xs) where
-    itemN' p = lens (fetchN p) (replaceN' p)
+    itemN' = lens (fetchN @n) (replaceN' @n)
 
 -- | Polymorphic version of 'itemN''
 class HasItemN (n :: Nat) a b s t | s n -> a, t n -> b, s n b -> t, t n a -> s where
-    itemN :: proxy n -> Lens s t a b
+    itemN :: Lens s t a b
 
     -- | Make it easy to create an instance of 'itemN' using 'Data.Generics.Product.Positions'
-    default itemN :: (HasPosition n s t a b) => proxy n -> Lens s t a b
-    itemN _ = position @n
+    default itemN :: (HasPosition n s t a b) => Lens s t a b
+    itemN = position @n
 
 instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
   => HasItemN n x y (Many xs) (Many ys) where
-    itemN p = lens (fetchN p) (replaceN @n @y p)
+    itemN = lens (fetchN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
 
@@ -192,7 +191,7 @@ class HasProject (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
 
 instance (Select smaller larger, Amend smaller smaller' larger, larger' ~ Replaces smaller smaller' larger)
   => HasProject smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
-    project = lens select (amend @smaller @smaller' Proxy)
+    project = lens select (amend @smaller @smaller')
 
 -- | 'selectL' ('view' 'projectL') and 'amendL' ('set' 'projectL') in 'Lens'' form.
 --
@@ -203,14 +202,14 @@ instance (Select smaller larger, Amend smaller smaller' larger, larger' ~ Replac
 --     False './' Tagged \@\"Hi" (6 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Bye" \'P' './' 'nil'
 -- @
 class HasProjectL' (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
-    projectL' :: proxy ls -> Lens' s a
+    projectL' ::  Lens' s a
 
 instance ( Select smaller larger
          , Amend' smaller larger
          , smaller ~ KindsAtLabels ls larger
          , IsDistinct ls
          , UniqueLabels ls larger) => HasProjectL' ls smaller larger (Many smaller) (Many larger) where
-    projectL' p = lens (selectL p) (amendL' p)
+    projectL' = lens (selectL @ls) (amendL' @ls)
 
 -- | Polymorphic version of 'projectL''
 --
@@ -226,7 +225,7 @@ class HasProjectL (ls :: k1) (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
         , a ss -> s, b ss -> s, t ss -> s
         , a ts -> t, b ts -> t, s ts -> t
         , s ls -> as, t ls -> bs, s ls b -> t, t ls a -> s where
-    projectL :: proxy ls -> Lens s t a b
+    projectL :: Lens s t a b
 
 instance ( Select smaller larger
          , Amend smaller smaller' larger
@@ -235,7 +234,7 @@ instance ( Select smaller larger
          , UniqueLabels ls larger
          , larger' ~ Replaces smaller smaller' larger)
   => HasProjectL ls smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
-    projectL p = lens (selectL p) (amendL p)
+    projectL = lens (selectL @ls) (amendL @ls)
 
 -- | 'selectN' ('view' 'projectN') and 'amendN' ('set' 'projectN') in 'Lens'' form.
 --
@@ -250,11 +249,11 @@ instance ( Select smaller larger
 --     (4 :: Int) './' False './' \'X' './' Just \'O' './' (8 :: Int) './' Just \'B' './' 'nil'
 -- @
 class HasProjectN' (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
-    projectN' :: proxy ns -> Lens' s a
+    projectN' :: Lens' s a
 
 instance (SelectN ns smaller larger, AmendN' ns smaller larger)
   => HasProjectN' ns smaller larger (Many smaller) (Many larger) where
-    projectN' p = lens (selectN p) (amendN' p)
+    projectN' = lens (selectN @ns) (amendN' @ns)
 
 -- | Polymorphic version of 'projectN''
 class HasProjectN (ns :: [Nat]) (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
@@ -264,8 +263,8 @@ class HasProjectN (ns :: [Nat]) (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
         , a ss -> s, b ss -> s, t ss -> s
         , a ts -> t, b ts -> t, s ts -> t
         , s ns -> as, t ns -> bs, s ns b -> t, t ns a -> s where
-    projectN :: proxy ns -> Lens s t a b
+    projectN :: Lens s t a b
 
 instance (SelectN ns smaller larger, AmendN ns smaller smaller' larger, larger' ~ ReplacesIndex ns smaller' larger)
   => HasProjectN ns smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
-    projectN p = lens (selectN p) (amendN p)
+    projectN = lens (selectN @ns) (amendN @ns)

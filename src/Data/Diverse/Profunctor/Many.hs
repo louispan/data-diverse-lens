@@ -23,7 +23,6 @@ import Control.Lens
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Profunctor
-import Data.Proxy
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many'
 itemized
@@ -33,7 +32,7 @@ itemized
        , UniqueMember b (Replace a b a')
        )
     => w a b -> w (Many a') (Many (Replace a b a'))
-itemized w = dimap (\c -> (fetch c, c)) (\(b, c) -> replace (Proxy @a) c b) (first' w)
+itemized w = dimap (\c -> (fetch c, c)) (\(b, c) -> replace @a c b) (first' w)
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many' of one type
 itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])
@@ -47,7 +46,7 @@ projected
        , Amend a b a'
        )
     => proxy a' -> w (Many a) (Many b) -> w (Many a') (Many (Replaces a b a'))
-projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend (Proxy @a) c b) (first' w)
+projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend @a c b) (first' w)
 
 -- | Split the input between the two argument arrows and combine their output.
 -- The type of the resultant input is a 'Many' of all the unique types in the argument arrows' inputs,

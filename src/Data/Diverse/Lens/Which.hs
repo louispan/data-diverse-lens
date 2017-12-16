@@ -66,14 +66,14 @@ instance UniqueMember x xs => AsFacet x (Which xs) where
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
 class AsFacetL (l :: k) a s | s l -> a where
-    facetL :: proxy l -> Prism' s a
+    facetL :: Prism' s a
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => AsFacetL l x (Which xs) where
-    facetL p = prism' (pickL p) (trialL' p)
+    facetL = prism' (pickL @l) (trialL' @l)
 
 -- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
 class AsFacetTag (l :: k) a s | s l -> a where
-    facetTag :: proxy l -> Prism' s a
+    facetTag :: Prism' s a
 
 -- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
 -- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
@@ -81,7 +81,7 @@ genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => proxy l -> P
 genericFacetTag _ = _Ctor @l
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
-    facetTag p = prism' (pickTag p) (trialTag' p)
+    facetTag = prism' (pickTag @l) (trialTag' @l)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
@@ -95,10 +95,10 @@ instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l
 -- x \`shouldBe` (Just 5)
 -- @
 class AsFacetN (n :: Nat) a s | s n -> a where
-    facetN :: proxy n -> Prism' s a
+    facetN :: Prism' s a
 
 instance (MemberAt n x xs) => AsFacetN n x (Which xs) where
-    facetN p = prism' (pickN p) (trialN' p)
+    facetN = prism' (pickN @n) (trialN' @n)
 
 ------------------------------------------------------------------
 
@@ -130,7 +130,7 @@ instance ( Diversify branch tree
 -- b' \`shouldBe` Just b
 -- @
 class AsInjectL (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
-    injectL :: proxy ls -> Prism' s a
+    injectL :: Prism' s a
 
 instance ( Diversify branch tree
          , Reinterpret' branch tree
@@ -138,7 +138,7 @@ instance ( Diversify branch tree
          , UniqueLabels ls tree
          , IsDistinct ls
          ) => AsInjectL ls branch tree (Which branch) (Which tree) where
-    injectL p = prism' (diversifyL p) (reinterpretL' p)
+    injectL = prism' (diversifyL @ls) (reinterpretL' @ls)
 
 -- | 'diversifyN' ('review' 'injectN') and 'reinterpretN'' ('preview' 'injectN') in 'Prism'' form.
 --
@@ -150,9 +150,9 @@ instance ( Diversify branch tree
 -- y' \`shouldBe` Just ('pick' (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
 class AsInjectN (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
-    injectN :: proxy ns -> Prism' s a
+    injectN :: Prism' s a
 
 instance ( DiversifyN ns branch tree
        , ReinterpretN' ns branch tree
        ) => AsInjectN ns branch tree (Which branch) (Which tree) where
-    injectN p = prism' (diversifyN p) (reinterpretN' p)
+    injectN = prism' (diversifyN @ns) (reinterpretN' @ns)
