@@ -8,8 +8,23 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 1.0.0.0
+  - Removed overlapping instances of Data.Generics lens
+  - Using typeclass instead of plain functions so that lens can be used for other data types
+    - Added default implementations for some of these typeclasses using Data.Generic typeclasses.
+  - Breaking change: the xxx' version of functions are now consistently the simpler or non-polymorphic version    - This is more consistent with 'Control.Lens' as well.
+    - This means the following are swapped:
+      - `item`, `item'`
+      - `itemL`, `itemL'`
+      - `itemTag`, `itemTag'`
+      - `itemN`, `itemN'`
+      - `project`, `project'`
+      - `projectL`, `projectL'`
+      - `projectN`, `projectN'`
+
 * 0.5.2.0
   - Added itemTag and facetTag that also tag/untags the field.
+  - Added overlapping instances of Data.Generics lens
 
 * 0.5.1.0
   - Added faceted, injected, itemized, projected, which is analogous to Profunctor Choice and Strong

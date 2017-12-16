@@ -11,7 +11,6 @@ module Data.Diverse.Lens.WhichSpec (main, spec) where
 import Control.Lens
 import Data.Diverse
 import Data.Diverse.Lens
-import Data.Generics.Sum
 import Data.Proxy
 import Data.Tagged
 import Test.Hspec
@@ -39,25 +38,19 @@ spec = do
                 x = preview (facet @Int) y
             x `shouldBe` (Just 5)
 
-        it "can be constructed and destructed by type with 'Data.Generics.Sum.Typed._Typed'" $ do
-            let y = review (_Typed @Int) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Char]
-                x = preview (_Typed @Int) y
-            x `shouldBe` (Just 5)
-
         it "can be constructed and destructed by label with 'facetL'" $ do
             let y = review (facetL @Bar Proxy) (Tagged (5 :: Int)) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
                 x = preview (facetL @Bar Proxy) y
-            x `shouldBe` (Just (Tagged 5))
+                z = preview (facetL @Foo Proxy) y
+            x `shouldBe` Just (Tagged 5)
+            z `shouldBe` Nothing
 
         it "can be constructed and destructed by label with 'facetTag'" $ do
             let y = review (facetTag @Bar Proxy) (5 :: Int) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
                 x = preview (facetTag @Bar Proxy) y
-            x `shouldBe` (Just 5)
-
-        it "can be constructed and destructed by label with 'Data.Generics.Sum.Constructors._Ctor'" $ do
-            let y = review (_Ctor @"Bar") (5 :: Int) :: Which '[Tagged "Foo" Bool, Tagged "Bar" Int, Char, Bool, Char]
-                x = preview (_Ctor @"Bar") y
-            x `shouldBe` (Just 5)
+                z = preview (facetTag @Foo Proxy) y
+            x `shouldBe` Just 5
+            z `shouldBe` Nothing
 
         it "can be constructed and destructed by index with 'facetN'" $ do
             let y = review (facetN (Proxy @4)) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Int, Char]
@@ -69,13 +62,6 @@ spec = do
                 y = review (inject @_ @[Bool, Int, Char, String]) x
             y `shouldBe` pick (5 :: Int)
             let y' = preview (inject @[String, Int]) y
-            y' `shouldBe` Just (pick (5 :: Int))
-
-        it "can be 'diversify'ed and 'reinterpreted' by type with 'Data.Generics.Sum.Subtype._Sub'" $ do
-            let x = pick (5 :: Int) :: Which '[String, Int]
-                y = review (_Sub @_ @(Which [Bool, Int, Char, String])) x
-            y `shouldBe` pick (5 :: Int)
-            let y' = preview (_Sub @(Which [String, Int])) y
             y' `shouldBe` Just (pick (5 :: Int))
 
         it "can be 'diversifyL'ed and 'reinterpretedL' by label with 'injectL'" $ do

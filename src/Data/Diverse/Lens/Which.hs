@@ -1,7 +1,9 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
-
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
@@ -16,6 +18,7 @@ module Data.Diverse.Lens.Which (
       facet
     , facetL
     , facetTag
+    , genericFacetTag
     , facetN
 
       -- * Multiple types
@@ -28,9 +31,9 @@ module Data.Diverse.Lens.Which (
 import Control.Lens
 import Data.Diverse.Which
 import Data.Diverse.TypeLevel
-import Data.Proxy
-import Data.Tagged
 import Data.Generics.Sum
+import Data.Tagged
+import GHC.TypeLits
 
 -----------------------------------------------------------------
 
@@ -45,16 +48,15 @@ import Data.Generics.Sum
 --     x = 'preview' ('facet' \@Int) y -- 'trial'
 -- x \`shouldBe` (Just 5)
 -- @
-facet :: forall x xs. (UniqueMember x xs) => Prism' (Which xs) x
-facet = prism' pick trial'
+class AsFacet a s where
+    facet :: Prism' s a
 
--- | I'm using "Data.Generics" as the canoical class for AsXXX.
--- Overlap 'AsType' '_Typed' with the more efficient 'facet'
--- Undecidableinstances! Orphan instance!
-instance {-# OVERLAPPING #-} UniqueMember x xs => AsType x (Which xs) where
-    _Typed = facet
-    injectTyped = pick
-    projectTyped = trial'
+    -- | Make it easy to create an instance of 'AsFacet' using 'Data.Generics.Sum.Typed'
+    default facet :: (AsType a s) => Prism' s a
+    facet = _Typed
+
+instance UniqueMember x xs => AsFacet x (Which xs) where
+    facet = prism' pick trial'
 
 -- | 'pickL' ('review' 'facetL') and 'trialL'' ('preview' 'facetL'') in 'Prism'' form.
 --
@@ -63,21 +65,23 @@ instance {-# OVERLAPPING #-} UniqueMember x xs => AsType x (Which xs) where
 --     x = 'preview' ('facetL' \@Bar Proxy) y
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
-facetL :: forall l xs proxy x. (UniqueLabelMember l xs, x ~ KindAtLabel l xs)
-    => proxy l -> Prism' (Which xs) x
-facetL p = prism' (pickL p) (trialL' p)
+class AsFacetL (l :: k) a s | s l -> a where
+    facetL :: proxy l -> Prism' s a
+
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => AsFacetL l x (Which xs) where
+    facetL p = prism' (pickL p) (trialL' p)
 
 -- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
-facetTag :: forall l xs proxy x. (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
-    => proxy l -> Prism' (Which xs) x
-facetTag p = prism' (pickTag p) (trialTag' p)
+class AsFacetTag (l :: k) a s | s l -> a where
+    facetTag :: proxy l -> Prism' s a
 
--- | I'm using "Data.Generics" as the canoical class for AsXXX.
--- Overlap 'AsConstructor' '_Ctor' with the more efficient 'facetTag'
--- Undecidableinstances! Orphan instance!
-instance {-# OVERLAPPING #-} (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs)
-  => AsConstructor l (Which xs) (Which xs) x x where
-    _Ctor = facetTag (Proxy @l)
+-- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
+-- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
+genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => proxy l -> Prism' s a
+genericFacetTag _ = _Ctor @l
+
+instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
+    facetTag p = prism' (pickTag p) (trialTag' p)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
@@ -90,11 +94,13 @@ instance {-# OVERLAPPING #-} (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l
 --     x = 'preview' ('facetN' (Proxy \@4)) y -- 'trialN'
 -- x \`shouldBe` (Just 5)
 -- @
-facetN :: forall n xs proxy x. (MemberAt n x xs) => proxy n -> Prism' (Which xs) x
-facetN p = prism' (pickN p) (trialN' p)
+class AsFacetN (n :: Nat) a s | s n -> a where
+    facetN :: proxy n -> Prism' s a
+
+instance (MemberAt n x xs) => AsFacetN n x (Which xs) where
+    facetN p = prism' (pickN p) (trialN' p)
 
 ------------------------------------------------------------------
-
 
 -- | 'diversify' ('review' 'inject') and 'reinterpret'' ('preview' 'inject') in 'Prism'' form.
 --
@@ -105,24 +111,13 @@ facetN p = prism' (pickN p) (trialN' p)
 -- let y' = 'preview' ('inject' \@[String, Int]) y -- 'reinterpret'
 -- y' \`shouldBe` Just (pick (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-inject
-    :: forall branch tree.
-       ( Diversify branch tree
-       , Reinterpret' branch tree
-       )
-    => Prism' (Which tree) (Which branch)
-inject = prism' diversify reinterpret'
+class AsInject (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s where
+    inject :: Prism' s a
 
--- | I'm using "Data.Generics" as the canoical class for AsXXX.
--- Overlap 'AsSubtype' '_Sub' with the more efficient 'inject'
--- Undecidableinstances! Orphan instance!
-instance {-# OVERLAPPING #-} (Diversify branch tree, Reinterpret' branch tree)
-  => AsSubtype (Which branch) (Which tree) where
-    _Sub = inject
-    injectSub = diversify
-    projectSub a = case reinterpret' a of
-                       Nothing -> Left a
-                       Just a' -> Right a'
+instance ( Diversify branch tree
+         , Reinterpret' branch tree
+         ) => AsInject branch tree (Which branch) (Which tree) where
+    inject = prism' diversify reinterpret'
 
 -- | 'diversifyL' ('review' 'injectL') and 'reinterpretL'' ('preview' 'injectL') in 'Prism'' form.
 --
@@ -134,16 +129,16 @@ instance {-# OVERLAPPING #-} (Diversify branch tree, Reinterpret' branch tree)
 -- t \`shouldBe` t'
 -- b' \`shouldBe` Just b
 -- @
-injectL
-    :: forall ls branch tree proxy.
-       ( Diversify branch tree
-       , Reinterpret' branch tree
-       , branch ~ KindsAtLabels ls tree
-       , UniqueLabels ls tree
-       , IsDistinct ls
-       )
-    => proxy ls -> Prism' (Which tree) (Which branch)
-injectL p = prism' (diversifyL p) (reinterpretL' p)
+class AsInjectL (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
+    injectL :: proxy ls -> Prism' s a
+
+instance ( Diversify branch tree
+         , Reinterpret' branch tree
+         , branch ~ KindsAtLabels ls tree
+         , UniqueLabels ls tree
+         , IsDistinct ls
+         ) => AsInjectL ls branch tree (Which branch) (Which tree) where
+    injectL p = prism' (diversifyL p) (reinterpretL' p)
 
 -- | 'diversifyN' ('review' 'injectN') and 'reinterpretN'' ('preview' 'injectN') in 'Prism'' form.
 --
@@ -154,10 +149,10 @@ injectL p = prism' (diversifyL p) (reinterpretL' p)
 -- let y' = 'preview' ('injectN' @[3, 1] \@[String, Int] Proxy) y -- 'reinterpertN''
 -- y' \`shouldBe` Just ('pick' (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-injectN
-    :: forall indices branch tree proxy.
-       ( DiversifyN indices branch tree
-       , ReinterpretN' indices branch tree
-       )
-    => proxy indices -> Prism' (Which tree) (Which branch)
-injectN p = prism' (diversifyN p) (reinterpretN' p)
+class AsInjectN (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
+    injectN :: proxy ns -> Prism' s a
+
+instance ( DiversifyN ns branch tree
+       , ReinterpretN' ns branch tree
+       ) => AsInjectN ns branch tree (Which branch) (Which tree) where
+    injectN p = prism' (diversifyN p) (reinterpretN' p)
