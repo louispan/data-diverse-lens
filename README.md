@@ -8,6 +8,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 1.0.0.1
+  - Fixed missing exports of the new lens classes.
+
 * 1.0.0.0
   - Removed overlapping instances of Data.Generics lens
   - Using typeclass instead of plain functions so that lens can be used for other data types

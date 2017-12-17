@@ -20,23 +20,23 @@ module Data.Diverse.Lens.Many (
     -- * Single field
     -- ** Lens for a single field
     , HasItem(..)
-    , item'
-    , itemL
-    , itemL'
-    , itemTag
-    , itemTag'
-    , genericItemTag
-    , itemN
-    , itemN'
+    , HasItem'(..)
+    , HasItemL(..)
+    , HasItemL'(..)
+    , HasItemTag(..)
+    , HasItemTag'(..)
+    -- , genericItemTag
+    , HasItemN(..)
+    , HasItemN'(..)
 
     -- * Multiple fields
     -- ** Lens for multiple fields
-    , project
-    , project'
-    , projectL
-    , projectL'
-    , projectN
-    , projectN'
+    , HasProject(..)
+    , HasProject'(..)
+    , HasProjectL(..)
+    , HasProjectL'(..)
+    , HasProjectN(..)
+    , HasProjectN'(..)
     ) where
 
 import Control.Lens
@@ -107,7 +107,14 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Replace x y xs)
     itemL = lens (fetchL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags the field.
-class HasItemTag' (l :: k) a s | s l -> a where
+-- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
+-- when @l@ can actually be any kind.
+-- Create instances of 'HasItemTag'' using "Data.Generics.Product.Fields" as follows:
+-- @
+-- instance HasField' l Foo a => HasItemTag' l a Foo where
+--     itemTag' = field @l
+-- @
+class HasItemTag' (l :: k) a s where
     itemTag' :: Lens' s a
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => HasItemTag' l x (Many xs) where
@@ -117,10 +124,10 @@ instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => HasItemTag' 
 class HasItemTag (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
     itemTag :: Lens s t a b
 
--- | Make it easy to create an instance of 'itemTag' using 'Data.Generics.Product.Fields'
--- NB. This is not a default signature for HasItemTag, as this makes GHC think that l must be type 'Symbol'
-genericItemTag :: forall l a b s t. (HasField l s t a b) => Lens s t a b
-genericItemTag = field @l
+-- -- | Make it easy to create an instance of 'itemTag' using 'Data.Generics.Product.Fields'
+-- -- NB. This is not a default signature for HasItemTag, as this makes GHC think that l must be type 'Symbol'
+-- genericItemTag :: forall l a b s t. (HasField l s t a b) => Lens s t a b
+-- genericItemTag = field @l
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (Tagged l x) (Tagged l y) xs)
   => HasItemTag l x y (Many xs) (Many ys) where

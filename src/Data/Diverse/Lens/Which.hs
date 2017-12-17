@@ -15,17 +15,17 @@
 module Data.Diverse.Lens.Which (
       -- * Single type
       -- ** Prism
-      facet
-    , facetL
-    , facetTag
-    , genericFacetTag
-    , facetN
+      AsFacet(..)
+    , AsFacetL(..)
+    , AsFacetTag(..)
+    -- , genericFacetTag
+    , AsFacetN(..)
 
       -- * Multiple types
       -- ** Prism
-    , inject
-    , injectL
-    , injectN
+    , AsInject(..)
+    , AsInjectL(..)
+    , AsInjectN(..)
     ) where
 
 import Control.Lens
@@ -72,13 +72,20 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => AsFacetL l x (Which x
     facetL = prism' (pickL @l) (trialL' @l)
 
 -- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
+-- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
+-- when @l@ can actually be any kind.
+-- Create instances of 'AsFacetTag'' using "Data.Generics.Sum.Constructors" as follows:
+-- @
+-- instance AsConstructor' l Foo Foo a a => AsFacetTag l a Foo where
+--     facetTag = _Ctor @l
+-- @
 class AsFacetTag (l :: k) a s | s l -> a where
     facetTag :: Prism' s a
 
--- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
--- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
-genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => proxy l -> Prism' s a
-genericFacetTag _ = _Ctor @l
+-- -- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
+-- -- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
+-- genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => Prism' s a
+-- genericFacetTag = _Ctor @l
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
     facetTag = prism' (pickTag @l) (trialTag' @l)
