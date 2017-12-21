@@ -26,15 +26,7 @@ import Data.Diverse.Lens
 import Data.Proxy
 
 -- | A friendlier constraint synonym for 'faceted'.
-type Faceted w a a' b b' =
-    ( Profunctor w
-    , Choice w
-    , UniqueMember a a'
-    , UniqueMember b b'
-    , Diversify (Remove a a') b'
-    )
-
-type Faceted2 w a as x b bs y =
+type Faceted w a as x b bs y =
     ( Profunctor w
     , Choice w
     , MatchingFacet a x y
@@ -42,19 +34,15 @@ type Faceted2 w a as x b bs y =
     )
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
-faceted2 :: forall w a as x b bs y.
-    Faceted2 w a as x b bs y => w a b -> w x y
-faceted2 w = dimap (matchingFacet @a @x @y)
+faceted :: forall w a as x b bs y.
+    Faceted w a as x b bs y => w a b -> w x y
+faceted w = dimap (matchingFacet @a @x @y)
                    (either id (review facet))
                    (right' w)
 
--- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
-faceted :: Faceted w a a' b b' => w a b -> w (Which a') (Which b')
-faceted w = dimap trial (either diversify pick) (right' w)
-
 -- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
 faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
-faceted' w = dimap trial (either impossible pick) (right' w)
+faceted' w = dimap obvious pickOnly w
 
 -- | A friendlier constraint synonym for 'injected'.
 type Injected w a a' b b' =
