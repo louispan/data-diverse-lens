@@ -15,18 +15,18 @@
 module Data.Diverse.Lens.Which (
       -- * Single type
       -- ** Prism
-      -- AsFacet(..)
-      AsFacet'(..)
-    , AsFacetL'(..)
-    , AsFacetTag'(..)
+      AsFacet(..)
+    , MatchingFacet(..)
+    , AsFacetL(..)
+    , AsFacetTag(..)
     -- , genericFacetTag
-    , AsFacetN'(..)
+    , AsFacetN(..)
 
       -- * Multiple types
       -- ** Prism
-    , AsInject'(..)
-    , AsInjectL'(..)
-    , AsInjectN'(..)
+    , AsInject(..)
+    , AsInjectL(..)
+    , AsInjectN(..)
     ) where
 
 import Control.Lens
@@ -49,15 +49,15 @@ import GHC.TypeLits
 --     x = 'preview' ('facet' \@Int) y -- 'trial'
 -- x \`shouldBe` (Just 5)
 -- @
-class AsFacet' a s where
-    facet' :: Prism' s a
+class AsFacet a s where
+    facet :: Prism' s a
 
     -- | Make it easy to create an instance of 'AsFacet' using 'Data.Generics.Sum.Typed'
-    default facet' :: (AsType a s) => Prism' s a
-    facet' = _Typed
+    default facet :: (AsType a s) => Prism' s a
+    facet = _Typed
 
-instance UniqueMember x xs => AsFacet' x (Which xs) where
-    facet' = prism' pick trial'
+instance UniqueMember x xs => AsFacet x (Which xs) where
+    facet = prism' pick trial'
 
 -- -- | Polymorphic version of 'AsFacet'.
 -- -- 'review' 'facet' :: @(b -> t)@ -- @b@ can always be made into a @t@
@@ -70,6 +70,29 @@ instance UniqueMember x xs => AsFacet' x (Which xs) where
 --          , ys ~ Remove x xs) => AsFacet x y (Which xs) (Which ys) where
 --     facet = prism (pick :: y -> Which ys) (trial :: Which xs -> Either (Which ys) x)
 
+--     what I want is:
+--     facet = prism (pick :: x -> Which xs) (trial :: Which xs -> Either (Which ys) x)
+
+class AsFacet a s => MatchingFacet a s t | s a -> t where
+    -- | Unfortunately, polymorphic @Prism s t a b@ cannot be used as it can only be created with:
+    -- @
+    -- (UniqueMember x xs, UniqueMember y ys, ys ~ Remove x xs)
+    -- => prism (pick :: y -> Which ys) (trial :: Which xs -> Either (Which ys) x)
+    -- @
+    -- This above causes problems when used monomorphically with @s ~ t@ and @x ~ y@ since
+    -- @xs@ cannot equal @ys ~ Remove x x@.
+    --
+    -- What is desirec is:
+    -- (UniqueMember x xs, ys ~ Remove x xs)
+    -- => prism_ (pick :: x -> Which xs) (trial :: Which xs -> Either (Which ys) x)
+    --
+    -- So we expose the polymorhpic 'matching' explicitly.
+    matchingFacet :: s -> Either t a
+
+instance ( UniqueMember x xs
+         , ys ~ Remove x xs) => MatchingFacet x (Which xs) (Which ys) where
+    matchingFacet = trial
+
 -- | 'pickL' ('review' 'facetL') and 'trialL'' ('preview' 'facetL'') in 'Prism'' form.
 --
 -- @
@@ -77,12 +100,12 @@ instance UniqueMember x xs => AsFacet' x (Which xs) where
 --     x = 'preview' ('facetL' \@Bar Proxy) y
 -- x \`shouldBe` (Just (Tagged 5))
 -- @
-class AsFacetL' (l :: k) a s | s l -> a where
-    facetL' :: Prism' s a
+class AsFacetL (l :: k) a s | s l -> a where
+    facetL :: Prism' s a
 
 instance (UniqueLabelMember l xs
-         , x ~ KindAtLabel l xs) => AsFacetL' l x (Which xs) where
-    facetL' = prism' (pickL @l) (trialL' @l)
+         , x ~ KindAtLabel l xs) => AsFacetL l x (Which xs) where
+    facetL = prism' (pickL @l) (trialL' @l)
 
 -- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
@@ -92,16 +115,16 @@ instance (UniqueLabelMember l xs
 -- instance AsConstructor' l Foo Foo a a => AsFacetTag l a Foo where
 --     facetTag = _Ctor @l
 -- @
-class AsFacetTag' (l :: k) a s | s l -> a where
-    facetTag' :: Prism' s a
+class AsFacetTag (l :: k) a s | s l -> a where
+    facetTag :: Prism' s a
 
 -- -- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
 -- -- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
 -- genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => Prism' s a
 -- genericFacetTag = _Ctor @l
 
-instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag' l x (Which xs) where
-    facetTag' = prism' (pickTag @l) (trialTag' @l)
+instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
+    facetTag = prism' (pickTag @l) (trialTag' @l)
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
@@ -114,11 +137,11 @@ instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag' 
 --     x = 'preview' ('facetN' (Proxy \@4)) y -- 'trialN'
 -- x \`shouldBe` (Just 5)
 -- @
-class AsFacetN' (n :: Nat) a s | s n -> a where
-    facetN' :: Prism' s a
+class AsFacetN (n :: Nat) a s | s n -> a where
+    facetN :: Prism' s a
 
-instance (MemberAt n x xs) => AsFacetN' n x (Which xs) where
-    facetN' = prism' (pickN @n) (trialN' @n)
+instance (MemberAt n x xs) => AsFacetN n x (Which xs) where
+    facetN = prism' (pickN @n) (trialN' @n)
 
 ------------------------------------------------------------------
 
@@ -131,13 +154,13 @@ instance (MemberAt n x xs) => AsFacetN' n x (Which xs) where
 -- let y' = 'preview' ('inject' \@[String, Int]) y -- 'reinterpret'
 -- y' \`shouldBe` Just (pick (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-class AsInject' (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s where
-    inject' :: Prism' s a
+class AsInject (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s where
+    inject :: Prism' s a
 
 instance ( Diversify branch tree
          , Reinterpret' branch tree
-         ) => AsInject' branch tree (Which branch) (Which tree) where
-    inject' = prism' diversify reinterpret'
+         ) => AsInject branch tree (Which branch) (Which tree) where
+    inject = prism' diversify reinterpret'
 
 -- | 'diversifyL' ('review' 'injectL') and 'reinterpretL'' ('preview' 'injectL') in 'Prism'' form.
 --
@@ -149,16 +172,16 @@ instance ( Diversify branch tree
 -- t \`shouldBe` t'
 -- b' \`shouldBe` Just b
 -- @
-class AsInjectL' (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
-    injectL' :: Prism' s a
+class AsInjectL (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
+    injectL :: Prism' s a
 
 instance ( Diversify branch tree
          , Reinterpret' branch tree
          , branch ~ KindsAtLabels ls tree
          , UniqueLabels ls tree
          , IsDistinct ls
-         ) => AsInjectL' ls branch tree (Which branch) (Which tree) where
-    injectL' = prism' (diversifyL @ls) (reinterpretL' @ls)
+         ) => AsInjectL ls branch tree (Which branch) (Which tree) where
+    injectL = prism' (diversifyL @ls) (reinterpretL' @ls)
 
 -- | 'diversifyN' ('review' 'injectN') and 'reinterpretN'' ('preview' 'injectN') in 'Prism'' form.
 --
@@ -169,10 +192,10 @@ instance ( Diversify branch tree
 -- let y' = 'preview' ('injectN' @[3, 1] \@[String, Int] Proxy) y -- 'reinterpertN''
 -- y' \`shouldBe` Just ('pick' (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-class AsInjectN' (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
-    injectN' :: Prism' s a
+class AsInjectN (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
+    injectN :: Prism' s a
 
 instance ( DiversifyN ns branch tree
        , ReinterpretN' ns branch tree
-       ) => AsInjectN' ns branch tree (Which branch) (Which tree) where
-    injectN' = prism' (diversifyN @ns) (reinterpretN' @ns)
+       ) => AsInjectN ns branch tree (Which branch) (Which tree) where
+    injectN = prism' (diversifyN @ns) (reinterpretN' @ns)

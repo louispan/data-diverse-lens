@@ -15,8 +15,6 @@ import Data.Diverse.Lens
 import Data.Tagged
 import Test.Hspec
 
-import Data.Profunctor.Unsafe
-
 data Foo
 data Bar
 data Hi
@@ -31,23 +29,14 @@ main = hspec spec
 -- hush :: Either a b -> Maybe b
 -- hush = either (const Nothing) Just
 
--- wack :: Prism (Which '[Bool, Int, Char, String])
---               (Which '[Bool, Int, Char])
---               String
---               Int
--- wack = undefined
-
--- re' :: Optic Tagged Identity s t a b -> Getter b t
--- re' p = to (runIdentity #. unTagged #. p .# Tagged .# Identity)
-
 spec :: Spec
 spec = do
     describe "Which" $ do
 
-        it "can be constructed and destructed by type with 'facet''" $ do
+        it "can be constructed and destructed by type with 'facet'" $ do
             -- NB. Int is unique, even if Bool and Char is not unique
-            let y = review (facet' @Int) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Char]
-                x = preview (facet' @Int) y
+            let y = review (facet @Int) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Char]
+                x = preview (facet @Int) y
             x `shouldBe` (Just 5)
 
         -- it "can be constructed and destructed by type with 'facet'" $ do
@@ -56,43 +45,43 @@ spec = do
         --         x = preview (facet @_ @Int) y
         --     x `shouldBe` (Just 5)
 
-        it "can be constructed and destructed by label with 'facetLl''" $ do
-            let y = review (facetL' @Bar) (Tagged (5 :: Int)) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
-                x = preview (facetL' @Bar) y
-                z = preview (facetL' @Foo) y
+        it "can be constructed and destructed by label with 'facetL'" $ do
+            let y = review (facetL @Bar) (Tagged (5 :: Int)) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
+                x = preview (facetL @Bar) y
+                z = preview (facetL @Foo) y
             x `shouldBe` Just (Tagged 5)
             z `shouldBe` Nothing
 
-        it "can be constructed and destructed by label with 'facetTag''" $ do
-            let y = review (facetTag' @Bar) (5 :: Int) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
-                x = preview (facetTag' @Bar) y
-                z = preview (facetTag' @Foo) y
+        it "can be constructed and destructed by label with 'facetTag'" $ do
+            let y = review (facetTag @Bar) (5 :: Int) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
+                x = preview (facetTag @Bar) y
+                z = preview (facetTag @Foo) y
             x `shouldBe` Just 5
             z `shouldBe` Nothing
 
-        it "can be constructed and destructed by index with 'facetN''" $ do
-            let y = review (facetN' @4) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Int, Char]
-                x = preview (facetN' @4) y
+        it "can be constructed and destructed by index with 'facetN'" $ do
+            let y = review (facetN @4) (5 :: Int) :: Which '[Bool, Int, Char, Bool, Int, Char]
+                x = preview (facetN @4) y
             x `shouldBe` (Just 5)
 
-        it "can be 'diversify'ed and 'reinterpreted' by type with 'inject''" $ do
+        it "can be 'diversify'ed and 'reinterpreted' by type with 'inject'" $ do
             let x = pick (5 :: Int) :: Which '[String, Int]
-                y = review (inject' @_ @[Bool, Int, Char, String]) x
+                y = review (inject @_ @[Bool, Int, Char, String]) x
             y `shouldBe` pick (5 :: Int)
-            let y' = preview (inject' @[String, Int]) y
+            let y' = preview (inject @[String, Int]) y
             y' `shouldBe` Just (pick (5 :: Int))
 
-        it "can be 'diversifyL'ed and 'reinterpretedL' by label with 'injectL''" $ do
+        it "can be 'diversifyL'ed and 'reinterpretedL' by label with 'injectL'" $ do
             let t = pick @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool] (5 :: Tagged Bar Int)
                 b = pick @_ @'[Tagged Foo Bool, Tagged Bar Int] (5 :: Tagged Bar Int)
-                t' = review (injectL' @[Foo, Bar] @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool]) b
-                b' = preview (injectL' @[Foo, Bar]) t'
+                t' = review (injectL @[Foo, Bar] @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool]) b
+                b' = preview (injectL @[Foo, Bar]) t'
             t `shouldBe` t'
             b' `shouldBe` Just b
 
-        it "can be 'diversifyN'ed and 'reinterpretedN' by index with 'injectN''" $ do
+        it "can be 'diversifyN'ed and 'reinterpretedN' by index with 'injectN'" $ do
             let x = pick (5 :: Int) :: Which '[String, Int]
-                y = review (injectN' @[3, 1] @_ @[Bool, Int, Char, String]) x
+                y = review (injectN @[3, 1] @_ @[Bool, Int, Char, String]) x
             y `shouldBe` pick (5 :: Int)
-            let y' = preview (injectN' @[3, 1] @[String, Int]) y
+            let y' = preview (injectN @[3, 1] @[String, Int]) y
             y' `shouldBe` Just (pick (5 :: Int))

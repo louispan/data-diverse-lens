@@ -22,7 +22,7 @@ import qualified Control.Category as C
 import Control.Lens
 import Data.Diverse.Which
 import Data.Diverse.TypeLevel
--- import Data.Diverse.Lens
+import Data.Diverse.Lens
 import Data.Proxy
 
 -- | A friendlier constraint synonym for 'faceted'.
@@ -34,19 +34,19 @@ type Faceted w a a' b b' =
     , Diversify (Remove a a') b'
     )
 
--- type Faceted2 w a as x b bs y =
---     ( Profunctor w
---     , Choice w
---     , AsFacet a b x y
---     , AsFacet' b y
---     )
+type Faceted2 w a as x b bs y =
+    ( Profunctor w
+    , Choice w
+    , MatchingFacet a x y
+    , AsFacet b y
+    )
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
--- faceted :: forall w a as x b bs y.
---     Faceted2 w a as x b bs y => w a b -> w x y
--- faceted w = dimap (matching (facet @a @b @x @y))
---                    (either id (review facet'))
---                    (right' w)
+faceted2 :: forall w a as x b bs y.
+    Faceted2 w a as x b bs y => w a b -> w x y
+faceted2 w = dimap (matchingFacet @a @x @y)
+                   (either id (review facet))
+                   (right' w)
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
 faceted :: Faceted w a a' b b' => w a b -> w (Which a') (Which b')
