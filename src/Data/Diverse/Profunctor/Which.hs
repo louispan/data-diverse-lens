@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
@@ -23,38 +24,58 @@ import Data.Diverse.Which
 import Data.Diverse.TypeLevel
 import Data.Proxy
 
+-- | A friendlier constraint synonym for 'faceted'.
+type Faceted w a a' b b' =
+    ( Profunctor w
+    , Choice w
+    , UniqueMember a a'
+    , UniqueMember b b'
+    , Diversify (Complement a' '[a]) b'
+    )
+
 -- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which'
-faceted
-    :: ( Profunctor w
-       , Choice w
-       , UniqueMember a a'
-       , UniqueMember b b'
-       , Diversify (Complement a' '[a]) b'
-       )
-    => w a b -> w (Which a') (Which b')
+faceted :: Faceted w a a' b b' => w a b -> w (Which a') (Which b')
 faceted w = dimap trial (either diversify pick) (right' w)
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
 faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
 faceted' w = dimap trial (either impossible pick) (right' w)
 
+-- | A friendlier constraint synonym for 'injected'.
+type Injected w a a' b b' =
+    ( Profunctor w
+    , Choice w
+    , Reinterpret a a'
+    , Diversify b (AppendUnique (Complement a' a) b)
+    , Diversify (Complement a' a) (AppendUnique (Complement a' a) b)
+    , b' ~ AppendUnique (Complement a' a) b
+    -- extra contraint to prevent surprises (see comment for 'injected')
+    , Complement a a' ~ '[]
+    )
+
 -- | Like 'Choice' or 'ArrowChoice' but lifting from 'Which' into another type of 'Which'
 -- NB. It is a compile error if all of the input types in the second arrow @a@
 -- is not the output types of the first arrow.
 -- This prevents surprising behaviour where the second arrow is ignored.
 injected
-    :: ( Profunctor w
-       , Choice w
-       , Reinterpret a a'
-       , Diversify b (AppendUnique (Complement a' a) b)
-       , Diversify (Complement a' a) (AppendUnique (Complement a' a) b)
-       -- extra contraint to prevent surprises (see comment above)
-       , Complement a a' ~ '[]
-       )
+    :: ( Injected w a a' b b')
     => proxy a'
     -> w (Which a) (Which b)
-    -> w (Which a') (Which (AppendUnique (Complement a' a) b))
+    -> w (Which a') (Which b')
 injected _ w = dimap reinterpret (either diversify diversify) (right' w)
+
+-- | A friendlier constraint synonym for '+||+'.
+type ChooseBetween w a1 a2 a3 b1 b2 b3 =
+    ( C.Category w
+    , Profunctor w
+    , Choice w
+    , Reinterpret a2 (Append a1 a2)
+    , a1 ~ Complement (Append a1 a2) a2
+    , a3 ~ Append a1 a2
+    , Diversify b1 (AppendUnique b1 b2)
+    , Diversify b2 (AppendUnique b1 b2)
+    , b3 ~ AppendUnique b1 b2
+    )
 
 -- | Split the input between the two argument arrows, retagging and merging their outputs.
 -- The output is merged into a 'Which' of unique types.
@@ -64,23 +85,22 @@ injected _ w = dimap reinterpret (either diversify diversify) (right' w)
 -- The compile error will be due to @(Append a1 a2)@ which will not satisfy
 -- @UniqueMember@ constraints in 'Reinterpret'.
 (+||+)
-    :: forall w a1 b1 a2 b2.
-       ( C.Category w
-       , Profunctor w
-       , Choice w
-       , Reinterpret a2 (Append a1 a2)
-       , a1 ~ Complement (Append a1 a2) a2
-       , Diversify b1 (AppendUnique b1 b2)
-       , Diversify b2 (AppendUnique b1 b2)
-       )
+    :: forall w a1 a2 a3 b1 b2 b3.
+       (ChooseBetween w a1 a2 a3 b1 b2 b3)
     => w (Which a1) (Which b1)
     -> w (Which a2) (Which b2)
-    -> w (Which (Append a1 a2)) (Which (AppendUnique b1 b2))
+    -> w (Which a3) (Which b3)
 x +||+ y =
     rmap
         (either diversify diversify)
         (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>> right' y)
 infixr 2 +||+ -- like +++
+
+-- | A friendlier constraint synonym for '>||>'.
+type AlsoChoose w a2 b1 b2 b3 =
+    ( C.Category w
+    , Injected w a2 b1 b2 b3
+    )
 
 -- | Left-to-right chaining of arrows one after another,  where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
@@ -90,31 +110,22 @@ infixr 2 +||+ -- like +++
 -- This is to prevent surprises behaviour of the second arrow being ignored.
 -- The compile error will be due to the @Complement c b ~ '[]@ constraint.
 (>||>)
-    :: forall w a b c d.
-       ( C.Category w
-       , Profunctor w
-       , Choice w
-       , Reinterpret c b
-       , Diversify d (AppendUnique (Complement b c) d)
-       , Diversify (Complement b c) (AppendUnique (Complement b c) d)
-       , Complement c b ~ '[])
-    => w a (Which b)
-    -> w (Which c) (Which d)
-    -> w a (Which (AppendUnique (Complement b c) d))
-(>||>) hdl1 hdl2 = hdl1 C.>>> injected (Proxy @b) hdl2
+    :: forall w a a2 b1 b2 b3.
+       ( AlsoChoose w a2 b1 b2 b3
+       )
+    => w a (Which b1)
+    -> w (Which a2) (Which b2)
+    -> w a (Which b3)
+(>||>) hdl1 hdl2 = hdl1 C.>>> injected (Proxy @b1) hdl2
 infixr 2 >||> -- like +||+
 
 -- | right-to-left version of '(>||>)'
 (<||<)
-    :: ( C.Category w
-       , Profunctor w
-       , Choice w
-       , Reinterpret c b
-       , Diversify d (AppendUnique (Complement b c) d)
-       , Diversify (Complement b c) (AppendUnique (Complement b c) d)
-       , Complement c b ~ '[])
-    => w (Which c) (Which d)
-    -> w a (Which b)
-    -> w a (Which (AppendUnique (Complement b c) d))
+    :: forall w a a2 b1 b2 b3.
+       ( AlsoChoose w a2 b1 b2 b3
+       )
+    => w (Which a2) (Which b2)
+    -> w a (Which b1)
+    -> w a (Which b3)
 (<||<) = flip (>||>)
 infixl 2 <||< -- like >||>
