@@ -8,6 +8,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 1.1.0.0
+  - Using xxx' for Prism' typeclasses, just in case polymorphic prisms gets added.
+
 * 1.0.0.1
   - Fixed missing exports of the new lens classes.
 
