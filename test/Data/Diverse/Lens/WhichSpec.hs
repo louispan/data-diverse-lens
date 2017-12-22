@@ -66,22 +66,23 @@ spec = do
 
         it "can be 'diversify'ed and 'reinterpreted' by type with 'inject'" $ do
             let x = pick (5 :: Int) :: Which '[String, Int]
-                y = review (inject @_ @[Bool, Int, Char, String]) x
+                y = review (inject @_ @_ @[Bool, Int, Char, String]) x
             y `shouldBe` pick (5 :: Int)
-            let y' = preview (inject @[String, Int]) y
+            let y' = preview (inject @_ @[String, Int]) y
             y' `shouldBe` Just (pick (5 :: Int))
 
         it "can be 'diversifyL'ed and 'reinterpretedL' by label with 'injectL'" $ do
             let t = pick @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool] (5 :: Tagged Bar Int)
-                b = pick @_ @'[Tagged Foo Bool, Tagged Bar Int] (5 :: Tagged Bar Int)
-                t' = review (injectL @[Foo, Bar] @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool]) b
-                b' = preview (injectL @[Foo, Bar]) t'
+                b = pick @_ @[Tagged Foo Bool, Tagged Bar Int] (5 :: Tagged Bar Int)
+                -- @_ @_ @Which @[Foo, Bar] @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool]
+                t' = review (injectL @_ @[Foo, Bar] @_ @[Tagged Bar Int, Tagged Foo Bool, Tagged Hi Char, Tagged Bye Bool]) b
+                b' = preview (injectL @_ @[Foo, Bar]) t'
             t `shouldBe` t'
             b' `shouldBe` Just b
 
         it "can be 'diversifyN'ed and 'reinterpretedN' by index with 'injectN'" $ do
             let x = pick (5 :: Int) :: Which '[String, Int]
-                y = review (injectN @[3, 1] @_ @[Bool, Int, Char, String]) x
+                y = review (injectN @_ @[3, 1] @_ @[Bool, Int, Char, String]) x
             y `shouldBe` pick (5 :: Int)
-            let y' = preview (injectN @[3, 1] @[String, Int]) y
+            let y' = preview (injectN @_ @[3, 1] @[String, Int]) y
             y' `shouldBe` Just (pick (5 :: Int))

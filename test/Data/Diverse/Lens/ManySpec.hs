@@ -84,33 +84,33 @@ spec = do
 
         it "has getter/setter lens for multiple fields using 'project''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
-            x ^. (project' @'[Int, Maybe Char]) `shouldBe` (5 :: Int) ./ Just 'O' ./ nil
-            (x & (project' @'[Int, Maybe Char]) .~ ((6 :: Int) ./ Just 'P' ./ nil)) `shouldBe`
+            x ^. (project' @_ @'[Int, Maybe Char]) `shouldBe` (5 :: Int) ./ Just 'O' ./ nil
+            (x & (project' @_ @'[Int, Maybe Char]) .~ ((6 :: Int) ./ Just 'P' ./ nil)) `shouldBe`
                 (6 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
 
         it "has polymorphic getter/setter lens for multiple fields using 'project'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
-            (x & (project @'[Int, Maybe Char]) .~ ("Foo" ./ Just "Bar" ./ nil)) `shouldBe`
+            (x & (project @_ @'[Int, Maybe Char]) .~ ("Foo" ./ Just "Bar" ./ nil)) `shouldBe`
                 "Foo" ./ False ./ 'X' ./ Just "Bar" ./ nil
 
         it "has getter/setter lens for multiple labelled fields using 'projectL''" $ do
             let x = False ./ Tagged @"Hi" (5 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ Tagged @"Bye" 'O' ./ nil
-            x ^. (projectL' @'[Foo, Bar]) `shouldBe` Tagged @Foo False ./ Tagged @Bar 'X' ./ nil
-            (x & (projectL' @'["Hi", "Bye"]) .~ (Tagged @"Hi" (6 :: Int) ./ Tagged @"Bye" 'P' ./ nil)) `shouldBe`
+            x ^. (projectL' @_ @'[Foo, Bar]) `shouldBe` Tagged @Foo False ./ Tagged @Bar 'X' ./ nil
+            (x & (projectL' @_ @'["Hi", "Bye"]) .~ (Tagged @"Hi" (6 :: Int) ./ Tagged @"Bye" 'P' ./ nil)) `shouldBe`
                 False ./ Tagged @"Hi" (6 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ Tagged @"Bye" 'P' ./ nil
 
         it "has polymorphic getter/setter lens for multiple labelled fields using 'project'" $ do
             let x = False ./ Tagged @"Hi" (5 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ Tagged @"Bye" 'O' ./ nil
-            (x & (projectL @'["Hi", "Bye"]) .~ (True ./ Tagged @"Changed" False ./ nil)) `shouldBe`
+            (x & (projectL @_ @'["Hi", "Bye"]) .~ (True ./ Tagged @"Changed" False ./ nil)) `shouldBe`
                 False ./ True ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ Tagged @"Changed" False ./ nil
 
         it "has getter/setter lens for multiple fields with duplicates using 'projectN''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. (projectN' @'[5, 4, 0]) `shouldBe` Just 'A' ./ (6 :: Int) ./ (5 ::Int) ./ nil
-            (x & (projectN' @'[5, 4, 0]) .~ (Just 'B' ./ (8 :: Int) ./ (4 ::Int) ./ nil)) `shouldBe`
+            x ^. (projectN' @_ @'[5, 4, 0]) `shouldBe` Just 'A' ./ (6 :: Int) ./ (5 ::Int) ./ nil
+            (x & (projectN' @_ @'[5, 4, 0]) .~ (Just 'B' ./ (8 :: Int) ./ (4 ::Int) ./ nil)) `shouldBe`
                 (4 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (8 :: Int) ./ Just 'B' ./ nil
 
         it "has polymorphic getter/setter lens for multiple fields with duplicates using 'projectN'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & (projectN @'[5, 4, 0]) .~ (Just "Foo" ./ (8 :: Int) ./ "Bar" ./ nil)) `shouldBe`
+            (x & (projectN @_ @'[5, 4, 0]) .~ (Just "Foo" ./ (8 :: Int) ./ "Bar" ./ nil)) `shouldBe`
                 "Bar" ./ False ./ 'X' ./ Just 'O' ./ (8 :: Int) ./ Just "Foo" ./ nil

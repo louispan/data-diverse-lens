@@ -5,11 +5,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Diverse.Lens.Many (
@@ -44,6 +45,7 @@ import Data.Tagged
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Generics.Product
+import Data.Kind
 import GHC.TypeLits
 
 -- | @_Many = iso fromMany toMany@
@@ -84,8 +86,8 @@ instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many
 --
 -- @
 -- let x = (5 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' 'nil'
--- x '^.' 'itemL'' \@Foo Proxy \`shouldBe` Tagged \@Foo False
--- (x '&' 'itemL'' \@Foo Proxy '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
+-- x '^.' 'itemL'' \@Foo \`shouldBe` Tagged \@Foo False
+-- (x '&' 'itemL'' \@Foo '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
 class HasItemL' (l :: k) a s | s l -> a where
     itemL' :: Lens' s a
@@ -97,7 +99,7 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many x
 --
 -- @
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
--- (x '&' 'itemL' \@Foo Proxy '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
+-- (x '&' 'itemL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
 class HasItemL (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
     itemL :: Lens s t a b
@@ -137,8 +139,8 @@ instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (T
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' ./ nil
--- x '^.' 'itemN'' (Proxy \@0) \`shouldBe` 5
--- (x '&' 'itemN'' (Proxy @0) '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
+-- x '^.' 'itemN'' \@0 \`shouldBe` 5
+-- (x '&' 'itemN'' \@0 '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
 -- @
 class HasItemN' (n :: Nat) a s | s n -> a where
     itemN' :: Lens' s a
@@ -171,68 +173,61 @@ instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
--- x '^.' ('project'' \@'[Int, Maybe Char]) \`shouldBe` (5 :: Int) './' Just \'O' './' 'nil'
--- (x '&' ('project'' \@'[Int, Maybe Char]) '.~' ((6 :: Int) './' Just 'P' './' 'nil')) \`shouldBe`
+-- x '^.' ('project'' \@_ \@'[Int, Maybe Char]) \`shouldBe` (5 :: Int) './' Just \'O' './' 'nil'
+-- (x '&' ('project'' \@_ \@'[Int, Maybe Char]) '.~' ((6 :: Int) './' Just 'P' './' 'nil')) \`shouldBe`
 --     (6 :: Int) './' False './' \'X' './' Just \'P' './' 'nil'
 -- @
-class HasProject' (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s where
-    project' :: Lens' s a
+class HasProject' (w :: [Type] -> Type) (as :: [Type]) (ss :: [Type]) where
+    project' :: Lens' (w ss) (w as)
 
     -- | Make it easy to create an instance of 'project' using 'Data.Generics.Product.Subtype'
     default project' :: (Subtype a s) => Lens' s a
     project' = super
 
 instance (Select smaller larger, Amend' smaller larger)
-  => HasProject' smaller larger (Many smaller) (Many larger) where
+  => HasProject' Many smaller larger where
     project' = lens select amend'
 
 -- | Polymorphic version of project'
-class HasProject (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
-        | a -> as, b -> bs, s -> ss, t -> ts
-        , b as -> a, s as -> a, t as -> a
-        , a bs -> b, s bs -> b, t bs -> b
-        , a ss -> s, b ss -> s, t ss -> s
-        , a ts -> t, b ts -> t, s ts -> t
-        , s a b -> t, t a b -> s where
-    project :: Lens s t a b
+class HasProject w (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
+        | ss as bs -> ts, ss as bs -> ts where
+    project :: Lens (w ss) (w ts) (w as) (w bs)
 
-instance (Select smaller larger, Amend smaller smaller' larger, larger' ~ Replaces smaller smaller' larger)
-  => HasProject smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
+instance ( Select smaller larger
+         , Amend smaller smaller' larger
+         , larger' ~ Replaces smaller smaller' larger)
+  => HasProject Many smaller smaller' larger larger' where
     project = lens select (amend @smaller @smaller')
 
 -- | 'selectL' ('view' 'projectL') and 'amendL' ('set' 'projectL') in 'Lens'' form.
 --
 -- @
 -- let x = False './' Tagged \@\"Hi" (5 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Bye" \'O' './' 'nil'
--- x '^.' ('projectL'' \@'[Foo, Bar] Proxy) \`shouldBe` Tagged \@Foo False './' Tagged \@Bar \'X' './' nil
--- (x '&' ('projectL'' \@'[\"Hi", \"Bye"] Proxy) '.~' (Tagged \@\"Hi" (6 :: Int) './' Tagged \@\"Bye" \'P' './' nil)) '`shouldBe`
+-- x '^.' ('projectL'' \@'[Foo, Bar] \`shouldBe` Tagged \@Foo False './' Tagged \@Bar \'X' './' nil
+-- (x '&' ('projectL'' \@'[\"Hi", \"Bye"] '.~' (Tagged \@\"Hi" (6 :: Int) './' Tagged \@\"Bye" \'P' './' nil)) '`shouldBe`
 --     False './' Tagged \@\"Hi" (6 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Bye" \'P' './' 'nil'
 -- @
-class HasProjectL' (ls :: k1) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ls -> as where
-    projectL' ::  Lens' s a
+class HasProjectL' w (ls :: [k]) (as :: [Type]) (ss :: [Type])
+  | ss ls -> as where
+    projectL' :: Lens' (w ss) (w as)
 
 instance ( Select smaller larger
          , Amend' smaller larger
          , smaller ~ KindsAtLabels ls larger
          , IsDistinct ls
-         , UniqueLabels ls larger) => HasProjectL' ls smaller larger (Many smaller) (Many larger) where
+         , UniqueLabels ls larger) => HasProjectL' Many ls smaller larger where
     projectL' = lens (selectL @ls) (amendL' @ls)
 
 -- | Polymorphic version of 'projectL''
 --
 -- @
 -- let x = False './' Tagged \@\"Hi" (5 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Bye" \'O' './' 'nil'
--- (x '&' ('projectL' \@'[\"Hi", \"Bye"] Proxy) '.~' (True './' Tagged \@\"Changed" False './' 'nil')) \`shouldBe`
+-- (x '&' ('projectL' \@'[\"Hi", \"Bye"] '.~' (True './' Tagged \@\"Changed" False './' 'nil')) \`shouldBe`
 --     False './' True './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Changed" False './' 'nil'
 -- @
-class HasProjectL (ls :: k1) (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
-        | a -> as, b -> bs, s -> ss, t -> ts
-        , b as -> a, s as -> a, t as -> a
-        , a bs -> b, s bs -> b, t bs -> b
-        , a ss -> s, b ss -> s, t ss -> s
-        , a ts -> t, b ts -> t, s ts -> t
-        , s ls -> as, t ls -> bs, s ls b -> t, t ls a -> s where
-    projectL :: Lens s t a b
+class HasProjectL w (ls :: [k]) (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
+        | ss ls -> as, ts ls -> bs, ss as bs -> ts, ss as bs -> ts where
+    projectL :: Lens (w ss) (w ts) (w as) (w bs)
 
 instance ( Select smaller larger
          , Amend smaller smaller' larger
@@ -240,7 +235,7 @@ instance ( Select smaller larger
          , IsDistinct ls
          , UniqueLabels ls larger
          , larger' ~ Replaces smaller smaller' larger)
-  => HasProjectL ls smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
+  => HasProjectL Many ls smaller smaller' larger larger' where
     projectL = lens (selectL @ls) (amendL @ls)
 
 -- | 'selectN' ('view' 'projectN') and 'amendN' ('set' 'projectN') in 'Lens'' form.
@@ -251,27 +246,23 @@ instance ( Select smaller larger
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
--- x '^.' ('projectN' \@'[5, 4, 0] Proxy) \`shouldBe` Just \'A' './' (6 :: Int) './' (5 ::Int) './' 'nil'
--- (x '&' ('projectN' \@'[5, 4, 0] Proxy) '.~' (Just \'B' './' (8 :: Int) './' (4 ::Int) './' nil)) \`shouldBe`
+-- x '^.' 'projectN' \@_ \@'[5, 4, 0] \`shouldBe` Just \'A' './' (6 :: Int) './' (5 ::Int) './' 'nil'
+-- (x '&' 'projectN' \@_ \@'[5, 4, 0] '.~' (Just \'B' './' (8 :: Int) './' (4 ::Int) './' nil)) \`shouldBe`
 --     (4 :: Int) './' False './' \'X' './' Just \'O' './' (8 :: Int) './' Just \'B' './' 'nil'
 -- @
-class HasProjectN' (ns :: [Nat]) (as :: k) (ss :: k) a s | a -> as, s -> ss, s as -> a, a ss -> s, s ns -> as where
-    projectN' :: Lens' s a
+class HasProjectN' w (ns :: [Nat]) (as :: [Type]) (ss :: [Type])
+  | ss ns -> as where
+    projectN' :: Lens' (w ss) (w as)
 
 instance (SelectN ns smaller larger, AmendN' ns smaller larger)
-  => HasProjectN' ns smaller larger (Many smaller) (Many larger) where
+  => HasProjectN' Many ns smaller larger where
     projectN' = lens (selectN @ns) (amendN' @ns)
 
 -- | Polymorphic version of 'projectN''
-class HasProjectN (ns :: [Nat]) (as :: k) (bs :: k) (ss :: k) (ts :: k) a b s t
-        | a -> as, b -> bs, s -> ss, t -> ts
-        , b as -> a, s as -> a, t as -> a
-        , a bs -> b, s bs -> b, t bs -> b
-        , a ss -> s, b ss -> s, t ss -> s
-        , a ts -> t, b ts -> t, s ts -> t
-        , s ns -> as, t ns -> bs, s ns b -> t, t ns a -> s where
-    projectN :: Lens s t a b
+class HasProjectN (w :: [Type] -> Type) (ns :: [Nat]) (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
+        | ss ns -> as, ts ns -> bs, ss as bs -> ts, ss as bs -> ts where
+    projectN :: Lens (w ss) (w ts) (w as) (w bs)
 
 instance (SelectN ns smaller larger, AmendN ns smaller smaller' larger, larger' ~ ReplacesIndex ns smaller' larger)
-  => HasProjectN ns smaller smaller' larger larger' (Many smaller) (Many smaller') (Many larger) (Many larger') where
+  => HasProjectN Many ns smaller smaller' larger larger' where
     projectN = lens (selectN @ns) (amendN @ns)
