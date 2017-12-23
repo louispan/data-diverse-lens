@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -32,12 +33,18 @@ module Data.Diverse.Lens.Many (
 
     -- * Multiple fields
     -- ** Lens for multiple fields
-    , HasProject(..)
-    , HasProject'(..)
-    , HasProjectL(..)
-    , HasProjectL'(..)
-    , HasProjectN(..)
-    , HasProjectN'(..)
+    , Project
+    , project
+    , Project'
+    , project'
+    , ProjectL
+    , projectL
+    , ProjectL'
+    , projectL'
+    , ProjectN
+    , projectN
+    , ProjectN'
+    , projectN'
     ) where
 
 import Control.Lens
@@ -162,8 +169,8 @@ instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
 
 -----------------------------------------------------------------------
 
--- type family Projected (xs :: k) s
--- type instance Projected xs (Many _) = Many xs
+-- | A friendlier constraint synonym for 'project''.
+type Project' (smaller :: [Type]) (larger :: [Type]) = (Select smaller larger, Amend' smaller larger)
 
 -- | 'select' ('view' 'project') and 'amend' ('set' 'project') in 'Lens'' form.
 --
@@ -177,27 +184,29 @@ instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
 -- (x '&' ('project'' \@_ \@'[Int, Maybe Char]) '.~' ((6 :: Int) './' Just 'P' './' 'nil')) \`shouldBe`
 --     (6 :: Int) './' False './' \'X' './' Just \'P' './' 'nil'
 -- @
-class HasProject' (w :: [Type] -> Type) (as :: [Type]) (ss :: [Type]) where
-    project' :: Lens' (w ss) (w as)
+project' :: forall smaller larger. Project' smaller larger => Lens' (Many larger) (Many smaller)
+project' = lens select amend'
 
-    -- | Make it easy to create an instance of 'project' using 'Data.Generics.Product.Subtype'
-    default project' :: (Subtype a s) => Lens' s a
-    project' = super
-
-instance (Select smaller larger, Amend' smaller larger)
-  => HasProject' Many smaller larger where
-    project' = lens select amend'
+-- | A friendlier constraint synonym for 'project'.
+type Project (smaller :: [Type]) (smaller' :: [Type]) (larger :: [Type]) (larger' :: [Type]) =
+    ( Select smaller larger
+    , Amend smaller smaller' larger
+    , larger' ~ Replaces smaller smaller' larger
+    )
 
 -- | Polymorphic version of project'
-class HasProject w (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
-        | ss as bs -> ts, ss as bs -> ts where
-    project :: Lens (w ss) (w ts) (w as) (w bs)
+project :: forall smaller smaller' larger larger'. Project smaller smaller' larger larger'
+    => Lens (Many larger) (Many larger') (Many smaller) (Many smaller')
+project = lens select (amend @smaller @smaller')
 
-instance ( Select smaller larger
-         , Amend smaller smaller' larger
-         , larger' ~ Replaces smaller smaller' larger)
-  => HasProject Many smaller smaller' larger larger' where
-    project = lens select (amend @smaller @smaller')
+-- | A friendlier constraint synonym for 'projectL''.
+type ProjectL' (ls :: [k]) (smaller :: [Type]) (larger :: [Type]) =
+    ( Select smaller larger
+    , Amend' smaller larger
+    , smaller ~ KindsAtLabels ls larger
+    , IsDistinct ls
+    , UniqueLabels ls larger
+    )
 
 -- | 'selectL' ('view' 'projectL') and 'amendL' ('set' 'projectL') in 'Lens'' form.
 --
@@ -207,16 +216,18 @@ instance ( Select smaller larger
 -- (x '&' ('projectL'' \@'[\"Hi", \"Bye"] '.~' (Tagged \@\"Hi" (6 :: Int) './' Tagged \@\"Bye" \'P' './' nil)) '`shouldBe`
 --     False './' Tagged \@\"Hi" (6 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Bye" \'P' './' 'nil'
 -- @
-class HasProjectL' w (ls :: [k]) (as :: [Type]) (ss :: [Type])
-  | ss ls -> as where
-    projectL' :: Lens' (w ss) (w as)
+projectL' :: forall ls smaller larger. ProjectL' ls smaller larger => Lens' (Many larger) (Many smaller)
+projectL' = lens (selectL @ls) (amendL' @ls)
 
-instance ( Select smaller larger
-         , Amend' smaller larger
-         , smaller ~ KindsAtLabels ls larger
-         , IsDistinct ls
-         , UniqueLabels ls larger) => HasProjectL' Many ls smaller larger where
-    projectL' = lens (selectL @ls) (amendL' @ls)
+-- | A friendlier constraint synonym for 'projectL'.
+type ProjectL (ls :: [k]) (smaller :: [Type]) (smaller' :: [Type]) (larger :: [Type]) (larger' :: [Type]) =
+    ( Select smaller larger
+    , Amend smaller smaller' larger
+    , smaller ~ KindsAtLabels ls larger
+    , IsDistinct ls
+    , UniqueLabels ls larger
+    , larger' ~ Replaces smaller smaller' larger
+    )
 
 -- | Polymorphic version of 'projectL''
 --
@@ -225,18 +236,13 @@ instance ( Select smaller larger
 -- (x '&' ('projectL' \@'[\"Hi", \"Bye"] '.~' (True './' Tagged \@\"Changed" False './' 'nil')) \`shouldBe`
 --     False './' True './' Tagged \@Foo False './' Tagged \@Bar \'X' './' Tagged \@\"Changed" False './' 'nil'
 -- @
-class HasProjectL w (ls :: [k]) (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
-        | ss ls -> as, ts ls -> bs, ss as bs -> ts, ss as bs -> ts where
-    projectL :: Lens (w ss) (w ts) (w as) (w bs)
+projectL :: forall ls smaller smaller' larger larger'. ProjectL ls smaller smaller' larger larger'
+  => Lens (Many larger) (Many larger') (Many smaller) (Many smaller')
+projectL = lens (selectL @ls) (amendL @ls)
 
-instance ( Select smaller larger
-         , Amend smaller smaller' larger
-         , smaller ~ KindsAtLabels ls larger
-         , IsDistinct ls
-         , UniqueLabels ls larger
-         , larger' ~ Replaces smaller smaller' larger)
-  => HasProjectL Many ls smaller smaller' larger larger' where
-    projectL = lens (selectL @ls) (amendL @ls)
+-- | A friendlier constraint synonym for 'projectN''.
+type ProjectN' (ns :: [Nat]) (smaller :: [Type]) (larger :: [Type]) =
+    (SelectN ns smaller larger, AmendN' ns smaller larger)
 
 -- | 'selectN' ('view' 'projectN') and 'amendN' ('set' 'projectN') in 'Lens'' form.
 --
@@ -250,19 +256,14 @@ instance ( Select smaller larger
 -- (x '&' 'projectN' \@_ \@'[5, 4, 0] '.~' (Just \'B' './' (8 :: Int) './' (4 ::Int) './' nil)) \`shouldBe`
 --     (4 :: Int) './' False './' \'X' './' Just \'O' './' (8 :: Int) './' Just \'B' './' 'nil'
 -- @
-class HasProjectN' w (ns :: [Nat]) (as :: [Type]) (ss :: [Type])
-  | ss ns -> as where
-    projectN' :: Lens' (w ss) (w as)
+projectN' :: forall ns smaller larger. ProjectN' ns smaller larger => Lens' (Many larger) (Many smaller)
+projectN' = lens (selectN @ns) (amendN' @ns)
 
-instance (SelectN ns smaller larger, AmendN' ns smaller larger)
-  => HasProjectN' Many ns smaller larger where
-    projectN' = lens (selectN @ns) (amendN' @ns)
+-- | A friendlier constraint synonym for 'projectN'.
+type ProjectN (ns :: [Nat]) (smaller :: [Type]) (smaller' :: [Type]) (larger :: [Type]) (larger' :: [Type]) =
+    (SelectN ns smaller larger, AmendN ns smaller smaller' larger, larger' ~ ReplacesIndex ns smaller' larger)
 
 -- | Polymorphic version of 'projectN''
-class HasProjectN (w :: [Type] -> Type) (ns :: [Nat]) (as :: [Type]) (bs :: [Type]) (ss :: [Type]) (ts :: [Type])
-        | ss ns -> as, ts ns -> bs, ss as bs -> ts, ss as bs -> ts where
-    projectN :: Lens (w ss) (w ts) (w as) (w bs)
-
-instance (SelectN ns smaller larger, AmendN ns smaller smaller' larger, larger' ~ ReplacesIndex ns smaller' larger)
-  => HasProjectN Many ns smaller smaller' larger larger' where
-    projectN = lens (selectN @ns) (amendN @ns)
+projectN :: forall ns smaller smaller' larger larger'. ProjectN ns smaller smaller' larger larger'
+    => Lens (Many larger) (Many larger') (Many smaller) (Many smaller')
+projectN = lens (selectN @ns) (amendN @ns)

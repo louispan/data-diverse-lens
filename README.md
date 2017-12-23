@@ -8,8 +8,10 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
-* 1.0.1.0
-  - Added 'Matching' typeclasses for polymorphic 'matching'
+* 2.0.0.0
+  - Breaking change: Removed HasProject and AsInject typeclasses and changed them back to functions.
+  - Added 'MatchingFacet' typeclasses for polymorphic 'matching' of prisms.
+  - Added constraint synonyms for Project/Inject/Projected/Injected.
 
 * 1.0.0.1
   - Fixed missing exports of the new lens classes.

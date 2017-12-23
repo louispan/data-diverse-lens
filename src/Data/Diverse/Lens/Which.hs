@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -18,15 +19,23 @@ module Data.Diverse.Lens.Which (
       AsFacet(..)
     , MatchingFacet(..)
     , AsFacetL(..)
+    , MatchingFacetL(..)
     , AsFacetTag(..)
+    , MatchingFacetTag(..)
     -- , genericFacetTag
     , AsFacetN(..)
+    , MatchingFacetN(..)
 
       -- * Multiple types
       -- ** Prism
-    , AsInject(..)
-    , AsInjectL(..)
-    , AsInjectN(..)
+    , Inject
+    , inject
+    -- , MatchingInject(..)
+    , InjectL
+    , injectL
+    -- , MatchingInjectL(..)
+    , InjectN
+    , injectN
     ) where
 
 import Control.Lens
@@ -60,20 +69,6 @@ class AsFacet a s where
 instance UniqueMember x xs => AsFacet x (Which xs) where
     facet = prism' pick trial'
 
--- -- | Polymorphic version of 'AsFacet'.
--- -- 'review' 'facet' :: @(b -> t)@ -- @b@ can always be made into a @t@
--- -- 'matching' facet' :: @(s -> Either t a)@ -- @s@ can be made into either an @a@ or type changed @t@
--- class AsFacet a b s t where
---     facet :: Prism s t a b
-
--- instance ( UniqueMember x xs
---          , UniqueMember y ys
---          , ys ~ Remove x xs) => AsFacet x y (Which xs) (Which ys) where
---     facet = prism (pick :: y -> Which ys) (trial :: Which xs -> Either (Which ys) x)
-
---     what I want is:
---     facet = prism (pick :: x -> Which xs) (trial :: Which xs -> Either (Which ys) x)
-
 class AsFacet a s => MatchingFacet a s t | s a -> t where
     -- | Unfortunately, polymorphic @Prism s t a b@ cannot be used as it can only be created with:
     -- @
@@ -90,8 +85,7 @@ class AsFacet a s => MatchingFacet a s t | s a -> t where
     -- So we expose the polymorhpic 'matching' explicitly.
     matchingFacet :: s -> Either t a
 
-instance ( UniqueMember x xs
-         , ys ~ Remove x xs) => MatchingFacet x (Which xs) (Which ys) where
+instance (UniqueMember x xs, ys ~ Remove x xs) => MatchingFacet x (Which xs) (Which ys) where
     matchingFacet = trial
 
 -- | 'pickL' ('review' 'facetL') and 'trialL'' ('preview' 'facetL'') in 'Prism'' form.
@@ -104,9 +98,16 @@ instance ( UniqueMember x xs
 class AsFacetL (l :: k) a s | s l -> a where
     facetL :: Prism' s a
 
-instance (UniqueLabelMember l xs
-         , x ~ KindAtLabel l xs) => AsFacetL l x (Which xs) where
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => AsFacetL l x (Which xs) where
     facetL = prism' (pickL @l) (trialL' @l)
+
+-- | Labelled version of 'MatchingFacet'
+class AsFacetL l a s => MatchingFacetL l a s t | s a -> t where
+    matchingFacetL :: s -> Either t a
+
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Remove x xs)
+  => MatchingFacetL l x (Which xs) (Which ys) where
+    matchingFacetL = trialL @l
 
 -- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
@@ -127,6 +128,14 @@ class AsFacetTag (l :: k) a s | s l -> a where
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
     facetTag = prism' (pickTag @l) (trialTag' @l)
 
+-- | Untagged version of 'MatchingFacet'
+class AsFacetTag l a s => MatchingFacetTag l a s t | l s a -> t where
+    matchingFacetTag :: s -> Either t a
+
+instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Remove (Tagged l x) xs)
+  => MatchingFacetTag l x (Which xs) (Which ys) where
+    matchingFacetTag = trialTag @l
+
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --
 -- @
@@ -144,7 +153,20 @@ class AsFacetN (n :: Nat) a s | s n -> a where
 instance (MemberAt n x xs) => AsFacetN n x (Which xs) where
     facetN = prism' (pickN @n) (trialN' @n)
 
+-- | Nat indexed version of 'MatchingFacet'
+class AsFacetN n a s => MatchingFacetN n a s t | s a -> t where
+    matchingFacetN :: s -> Either t a
+
+instance (MemberAt n x xs, ys ~ RemoveIndex n xs)
+  => MatchingFacetN n x (Which xs) (Which ys) where
+    matchingFacetN = trialN @n
+
 ------------------------------------------------------------------
+
+-- | A friendlier constraint synonym for 'inject'
+type Inject (branch :: [Type]) (tree :: [Type]) = ( Diversify branch tree
+                                                  , Reinterpret' branch tree
+                                                  )
 
 -- | 'diversify' ('review' 'inject') and 'reinterpret'' ('preview' 'inject') in 'Prism'' form.
 --
@@ -155,13 +177,17 @@ instance (MemberAt n x xs) => AsFacetN n x (Which xs) where
 -- let y' = 'preview' ('inject' \@_ \@[String, Int]) y -- 'reinterpret'
 -- y' \`shouldBe` Just (pick (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-class AsInject w (branch :: [Type]) (tree :: [Type]) where
-    inject :: Prism' (w tree) (w branch)
+inject :: forall branch tree. (Inject branch tree) => Prism' (Which tree) (Which branch)
+inject = prism' diversify reinterpret'
 
-instance ( Diversify branch tree
-         , Reinterpret' branch tree
-         ) => AsInject Which branch tree where
-    inject = prism' diversify reinterpret'
+-- | A friendlier constraint synonym for 'injectL'
+type InjectL (ls :: [k]) (branch :: [Type]) (tree :: [Type]) =
+    ( Diversify branch tree
+    , Reinterpret' branch tree
+    , branch ~ KindsAtLabels ls tree
+    , UniqueLabels ls tree
+    , IsDistinct ls
+    )
 
 -- | 'diversifyL' ('review' 'injectL') and 'reinterpretL'' ('preview' 'injectL') in 'Prism'' form.
 --
@@ -173,17 +199,14 @@ instance ( Diversify branch tree
 -- t \`shouldBe` t'
 -- b' \`shouldBe` Just b
 -- @
-class AsInjectL w (ls :: [k]) (branch :: [Type]) (tree :: [Type])
-  | tree ls -> branch where
-    injectL :: Prism' (w tree) (w branch)
+injectL :: forall ls branch tree. InjectL ls branch tree => Prism' (Which tree) (Which branch)
+injectL = prism' (diversifyL @ls) (reinterpretL' @ls)
 
-instance ( Diversify branch tree
-         , Reinterpret' branch tree
-         , branch ~ KindsAtLabels ls tree
-         , UniqueLabels ls tree
-         , IsDistinct ls
-         ) => AsInjectL Which ls branch tree where
-    injectL = prism' (diversifyL @ls) (reinterpretL' @ls)
+-- | A friendlier constraint synonym for 'injectN'
+type InjectN (ns :: [Nat]) (branch :: [Type]) (tree :: [Type]) =
+    ( DiversifyN ns branch tree
+    , ReinterpretN' ns branch tree
+    )
 
 -- | 'diversifyN' ('review' 'injectN') and 'reinterpretN'' ('preview' 'injectN') in 'Prism'' form.
 --
@@ -194,11 +217,6 @@ instance ( Diversify branch tree
 -- let y' = 'preview' ('injectN' \@_ @[3, 1] \@[String, Int]) y -- 'reinterpertN''
 -- y' \`shouldBe` Just ('pick' (5 :: Int)) :: Maybe ('Which' '[String, Int])
 -- @
-class AsInjectN w (ns :: [Nat]) (branch :: [Type]) (tree :: [Type])
-  | tree ns -> branch where
-    injectN :: Prism' (w tree) (w branch)
 
-instance ( DiversifyN ns branch tree
-       , ReinterpretN' ns branch tree
-       ) => AsInjectN Which ns branch tree where
-    injectN = prism' (diversifyN @ns) (reinterpretN' @ns)
+injectN :: forall ns branch tree. InjectN ns branch tree => Prism' (Which tree) (Which branch)
+injectN = prism' (diversifyN @ns) (reinterpretN' @ns)

@@ -22,23 +22,23 @@ import qualified Control.Category as C
 import Control.Arrow
 import Control.Lens
 import Data.Diverse.Many
+import Data.Diverse.Lens.Many
 import Data.Diverse.TypeLevel
 import Data.Profunctor
 
 -- | A friendlier constraint synonym for 'itemized'.
-type Itemized w a as b bs =
+type Itemized w a b s t =
     ( Profunctor w
     , Strong w
-    , UniqueMember a as
-    , UniqueMember b bs
-    , bs ~ Replace a b as
+    , HasItem a b s t
+    , HasItem' a s
     )
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many'
 itemized
-    :: forall w a as b bs. (Itemized w a as b bs)
-    => w a b -> w (Many as) (Many bs)
-itemized w = dimap (\c -> (fetch c, c)) (\(b, c) -> replace @a c b) (first' w)
+    :: forall w a b s t. (Itemized w a b s t)
+    => w a b -> w s t
+itemized w = dimap (\c -> (view item' c, c)) (\(b, c) -> set (item @a) b c) (first' w)
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many' of one type
 itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])

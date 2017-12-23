@@ -23,7 +23,6 @@ import Control.Lens
 import Data.Diverse.Which
 import Data.Diverse.TypeLevel
 import Data.Diverse.Lens
-import Data.Proxy
 
 -- | A friendlier constraint synonym for 'faceted'.
 type Faceted w a as x b bs y =
@@ -61,11 +60,10 @@ type Injected w a a' b b' =
 -- is not the output types of the first arrow.
 -- This prevents surprising behaviour where the second arrow is ignored.
 injected
-    :: ( Injected w a a' b b')
-    => proxy a'
-    -> w (Which a) (Which b)
+    :: (Injected w a a' b b')
+    => w (Which a) (Which b)
     -> w (Which a') (Which b')
-injected _ w = dimap reinterpret (either diversify diversify) (right' w)
+injected w = dimap reinterpret (either diversify diversify) (right' w)
 
 -- | A friendlier constraint synonym for '+||+'.
 type ChooseBetween w a1 a2 a3 b1 b2 b3 =
@@ -119,7 +117,7 @@ type AlsoChoose w a2 b1 b2 b3 =
     => w a (Which b1)
     -> w (Which a2) (Which b2)
     -> w a (Which b3)
-(>||>) hdl1 hdl2 = hdl1 C.>>> injected (Proxy @b1) hdl2
+(>||>) hdl1 hdl2 = hdl1 C.>>> injected @_ @_ @b1 hdl2
 infixr 2 >||> -- like +||+
 
 -- | right-to-left version of '(>||>)'
