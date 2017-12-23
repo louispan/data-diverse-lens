@@ -10,10 +10,14 @@
 
 module Data.Diverse.Profunctor.Many (
       -- * Combinators similar to Profunctor Strong
-      itemized
+      Itemized
+    , itemized
     , itemized'
+    , Projected
     , projected
+    , SelectWith
     , (*&&*)
+    , ThenSelect
     , (>&&>)
     , (<&&<)
     ) where

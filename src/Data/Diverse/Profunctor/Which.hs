@@ -10,10 +10,14 @@
 
 module Data.Diverse.Profunctor.Which (
       -- * Combinators similar to Profunctor Choice
-      faceted
+      Faceted
+    , faceted
     , faceted'
+    , Injected
     , injected
+    , ChooseBetween
     , (+||+)
+    , AlsoChoose
     , (>||>)
     , (<||<)
     ) where
