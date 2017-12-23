@@ -31,16 +31,18 @@ import Data.Diverse.TypeLevel
 import Data.Profunctor
 
 -- | A friendlier constraint synonym for 'itemized'.
-type Itemized w a b s t =
-    ( Profunctor w
-    , Strong w
-    , HasItem a b s t
+type Itemized a b s t =
+    ( HasItem a b s t
     , HasItem' a s
     )
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many'
-itemized
-    :: forall w a b s t. (Itemized w a b s t)
+itemized ::
+    forall w a b s t.
+    ( Profunctor w
+    , Strong w
+    , Itemized a b s t
+    )
     => w a b -> w s t
 itemized w = dimap (\c -> (view item' c, c)) (\(b, c) -> set (item @a) b c) (first' w)
 
@@ -49,26 +51,24 @@ itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])
 itemized' w = dimap fetch single w
 
 -- | A friendlier constraint synonym for 'projected'.
-type Projected w a1 a2 b1 b2 =
-    ( Profunctor w
-    , Strong w
-    , Select a1 a2
+type Projected a1 a2 b1 b2 =
+    ( Select a1 a2
     , Amend a1 b1 a2
     , b2 ~ Replaces a1 b1 a2
     )
 
 -- | Like 'Strong' or 'Arrow' but lifting from a 'Many' to a 'Many' of another type
-projected
-    :: forall proxy w a1 a2 b1 b2. (Projected w a1 a2 b1 b2)
+projected :: forall proxy w a1 a2 b1 b2.
+    ( Profunctor w
+    , Strong w
+    , Projected a1 a2 b1 b2
+    )
     => proxy a2 -> w (Many a1) (Many b1) -> w (Many a2) (Many b2)
 projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend @a1 c b) (first' w)
 
 -- | A friendlier constraint synonym for '*&&*'.
-type SelectWith w a1 a2 a3 b1 b2 b3 =
-    ( C.Category w
-    , Profunctor w
-    , Strong w
-    , Select a1 (AppendUnique a1 a2)
+type SelectWith a1 a2 a3 b1 b2 b3 =
+    ( Select a1 (AppendUnique a1 a2)
     , Select a2 (AppendUnique a1 a2)
     , a3 ~ AppendUnique a1 a2
     , b3 ~ Append b1 b2
@@ -80,7 +80,12 @@ type SelectWith w a1 a2 a3 b1 b2 b3 =
 -- Analogous to a 'Many' combination of both of 'Control.Arrow.***' and 'Control.Arrow.&&&'.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs.
 (*&&*)
-    :: forall w a1 a2 a3 b1 b2 b3. (SelectWith w a1 a2 a3 b1 b2 b3)
+    :: forall w a1 a2 a3 b1 b2 b3.
+    ( C.Category w
+    , Profunctor w
+    , Strong w
+    , SelectWith a1 a2 a3 b1 b2 b3
+    )
     => w (Many a1) (Many b1)
     -> w (Many a2) (Many b2)
     -> w (Many a3) (Many b3)
@@ -88,11 +93,8 @@ x *&&* y = rmap (uncurry (/./)) (lmap (select @a1 &&& select @a2) (first' x) C.>
 infixr 3 *&&* -- like ***
 
 -- | A friendlier constraint synonym for '>&&>'.
-type ThenSelect w a2 b1 b2 b3 =
-    ( C.Category w
-    , Profunctor w
-    , Strong w
-    , Select (Complement b1 a2) b1
+type ThenSelect a2 b1 b2 b3 =
+    ( Select (Complement b1 a2) b1
     , Select a2 b1
     , b3 ~ Append (Complement b1 a2) b2
     )
@@ -103,7 +105,11 @@ type ThenSelect w a2 b1 b2 b3 =
 -- or if the input of the second arrow is not a subset of the output of the first arrow.
 (>&&>)
     :: forall w a a2 b1 b2 b3.
-       (ThenSelect w a2 b1 b2 b3)
+    ( C.Category w
+    , Profunctor w
+    , Strong w
+    , ThenSelect a2 b1 b2 b3
+    )
     => w a (Many b1)
     -> w (Many a2) (Many b2)
     -> w a (Many b3)
@@ -112,7 +118,11 @@ infixr 3 >&&> -- like ***
 
 -- | right-to-left version of '(>&&>)'
 (<&&<) ::
-       (ThenSelect w a2 b1 b2 b3)
+    ( C.Category w
+    , Profunctor w
+    , Strong w
+    , ThenSelect a2 b1 b2 b3
+    )
     => w (Many a2) (Many b2)
     -> w a (Many b1)
     -> w a (Many b3)

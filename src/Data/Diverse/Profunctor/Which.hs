@@ -17,7 +17,6 @@ module Data.Diverse.Profunctor.Which (
     , injected
     , ChooseBetween
     , (+||+)
-    , AlsoChoose
     , (>||>)
     , (<||<)
     ) where
@@ -29,16 +28,18 @@ import Data.Diverse.TypeLevel
 import Data.Diverse.Lens
 
 -- | A friendlier constraint synonym for 'faceted'.
-type Faceted w a as x b bs y =
-    ( Profunctor w
-    , Choice w
-    , MatchingFacet a x y
+type Faceted a as x b bs y =
+    ( MatchingFacet a x y
     , AsFacet b y
     )
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
 faceted :: forall w a as x b bs y.
-    Faceted w a as x b bs y => w a b -> w x y
+    (Profunctor w
+    , Choice w
+    , Faceted a as x b bs y
+    )
+    => w a b -> w x y
 faceted w = dimap (matchingFacet @a @x @y)
                    (either id (review facet))
                    (right' w)
@@ -48,10 +49,8 @@ faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
 faceted' w = dimap obvious pickOnly w
 
 -- | A friendlier constraint synonym for 'injected'.
-type Injected w a a' b b' =
-    ( Profunctor w
-    , Choice w
-    , Reinterpret a a'
+type Injected a a' b b' =
+    ( Reinterpret a a'
     , Diversify b (AppendUnique (Complement a' a) b)
     , Diversify (Complement a' a) (AppendUnique (Complement a' a) b)
     , b' ~ AppendUnique (Complement a' a) b
@@ -63,18 +62,18 @@ type Injected w a a' b b' =
 -- NB. It is a compile error if all of the input types in the second arrow @a@
 -- is not the output types of the first arrow.
 -- This prevents surprising behaviour where the second arrow is ignored.
-injected
-    :: (Injected w a a' b b')
+injected ::
+    ( Profunctor w
+    , Choice w
+    , Injected a a' b b'
+    )
     => w (Which a) (Which b)
     -> w (Which a') (Which b')
 injected w = dimap reinterpret (either diversify diversify) (right' w)
 
 -- | A friendlier constraint synonym for '+||+'.
-type ChooseBetween w a1 a2 a3 b1 b2 b3 =
-    ( C.Category w
-    , Profunctor w
-    , Choice w
-    , Reinterpret a2 (Append a1 a2)
+type ChooseBetween a1 a2 a3 b1 b2 b3 =
+    ( Reinterpret a2 (Append a1 a2)
     , a1 ~ Complement (Append a1 a2) a2
     , a3 ~ Append a1 a2
     , Diversify b1 (AppendUnique b1 b2)
@@ -91,7 +90,11 @@ type ChooseBetween w a1 a2 a3 b1 b2 b3 =
 -- @UniqueMember@ constraints in 'Reinterpret'.
 (+||+)
     :: forall w a1 a2 a3 b1 b2 b3.
-       (ChooseBetween w a1 a2 a3 b1 b2 b3)
+       ( C.Category w
+       , Profunctor w
+       , Choice w
+       , ChooseBetween a1 a2 a3 b1 b2 b3
+       )
     => w (Which a1) (Which b1)
     -> w (Which a2) (Which b2)
     -> w (Which a3) (Which b3)
@@ -100,12 +103,6 @@ x +||+ y =
         (either diversify diversify)
         (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>> right' y)
 infixr 2 +||+ -- like +++
-
--- | A friendlier constraint synonym for '>||>'.
-type AlsoChoose w a2 b1 b2 b3 =
-    ( C.Category w
-    , Injected w a2 b1 b2 b3
-    )
 
 -- | Left-to-right chaining of arrows one after another,  where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
@@ -116,7 +113,9 @@ type AlsoChoose w a2 b1 b2 b3 =
 -- The compile error will be due to the @Complement c b ~ '[]@ constraint.
 (>||>)
     :: forall w a a2 b1 b2 b3.
-       ( AlsoChoose w a2 b1 b2 b3
+       ( C.Category w
+       , Choice w
+       , Injected a2 b1 b2 b3
        )
     => w a (Which b1)
     -> w (Which a2) (Which b2)
@@ -127,7 +126,9 @@ infixr 2 >||> -- like +||+
 -- | right-to-left version of '(>||>)'
 (<||<)
     :: forall w a a2 b1 b2 b3.
-       ( AlsoChoose w a2 b1 b2 b3
+       ( C.Category w
+       , Choice w
+       , Injected a2 b1 b2 b3
        )
     => w (Which a2) (Which b2)
     -> w a (Which b1)
