@@ -17,6 +17,7 @@ module Data.Diverse.Profunctor.Which (
     , injected
     , ChooseBetween
     , (+||+)
+    , ThenChoose
     , (>||>)
     , (<||<)
     ) where
@@ -35,8 +36,7 @@ type Faceted a as x b bs y =
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into a polymorphic variant.
 faceted :: forall w a as x b bs y.
-    (Profunctor w
-    , Choice w
+    ( Choice w
     , Faceted a as x b bs y
     )
     => w a b -> w x y
@@ -62,9 +62,8 @@ type Injected a a' b b' =
 -- NB. It is a compile error if all of the input types in the second arrow @a@
 -- is not the output types of the first arrow.
 -- This prevents surprising behaviour where the second arrow is ignored.
-injected ::
-    ( Profunctor w
-    , Choice w
+injected :: forall w a a' b b'.
+    ( Choice w
     , Injected a a' b b'
     )
     => w (Which a) (Which b)
@@ -91,7 +90,6 @@ type ChooseBetween a1 a2 a3 b1 b2 b3 =
 (+||+)
     :: forall w a1 a2 a3 b1 b2 b3.
        ( C.Category w
-       , Profunctor w
        , Choice w
        , ChooseBetween a1 a2 a3 b1 b2 b3
        )
@@ -104,23 +102,30 @@ x +||+ y =
         (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>> right' y)
 infixr 2 +||+ -- like +++
 
--- | Left-to-right chaining of arrows one after another,  where left over possibilities not handled
+-- | A friendlier constraint synonym for '>||>'.
+type ThenChoose a a2 b1 b2 b3 =
+    ( Injected a2 (AppendUnique b1 a2) b2 b3
+    , Diversify b1 (AppendUnique b1 a2)
+    , NotEmpty (Complement (AppendUnique b1 a2) b1)
+    )
+
+-- | Left-to-right chaining of arrows one after another, where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
 -- or if the types are not distinct of each of the argument arrow output,
--- or if the input of the second arrow is not a subset of the output of the first arrow.
+-- or if the input of the second arrow is not any subset of the output of the first arrow.
 -- This is to prevent surprises behaviour of the second arrow being ignored.
--- The compile error will be due to the @Complement c b ~ '[]@ constraint.
+-- The compile error will be due to the @NotEmpty (Complement (AppendUnique b1 a2) b1@ constraint.
 (>||>)
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
-       , Injected a2 b1 b2 b3
+       , ThenChoose a a2 b1 b2 b3
        )
     => w a (Which b1)
     -> w (Which a2) (Which b2)
     -> w a (Which b3)
-(>||>) hdl1 hdl2 = hdl1 C.>>> injected @_ @_ @b1 hdl2
+(>||>) hdl1 hdl2 = (rmap diversify hdl1) C.>>> injected @_ @_ @(AppendUnique b1 a2) hdl2
 infixr 2 >||> -- like +||+
 
 -- | right-to-left version of '(>||>)'
@@ -128,7 +133,7 @@ infixr 2 >||> -- like +||+
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
-       , Injected a2 b1 b2 b3
+       , ThenChoose a a2 b1 b2 b3
        )
     => w (Which a2) (Which b2)
     -> w a (Which b1)

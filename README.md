@@ -8,6 +8,10 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 2.2.0.0
+  - Renamed SelectWith to ProduceBoth, ThenSelect to ThenProduce; added ThenChoose. Changed semantics of ThenChoose to
+  only requiring any subset (instead of a strict subset) of the input of the second arrow to the output of the first arrow.
+
 * 2.1.0.0
   - Removed profunctor variable @w@ from the constraint synonyms for Projected/Injected.
 

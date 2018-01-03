@@ -15,9 +15,9 @@ module Data.Diverse.Profunctor.Many (
     , itemized'
     , Projected
     , projected
-    , SelectWith
+    , ProduceBoth
     , (*&&*)
-    , ThenSelect
+    , ThenProduce
     , (>&&>)
     , (<&&<)
     ) where
@@ -59,15 +59,14 @@ type Projected a1 a2 b1 b2 =
 
 -- | Like 'Strong' or 'Arrow' but lifting from a 'Many' to a 'Many' of another type
 projected :: forall proxy w a1 a2 b1 b2.
-    ( Profunctor w
-    , Strong w
+    ( Strong w
     , Projected a1 a2 b1 b2
     )
     => proxy a2 -> w (Many a1) (Many b1) -> w (Many a2) (Many b2)
 projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend @a1 c b) (first' w)
 
 -- | A friendlier constraint synonym for '*&&*'.
-type SelectWith a1 a2 a3 b1 b2 b3 =
+type ProduceBoth a1 a2 a3 b1 b2 b3 =
     ( Select a1 (AppendUnique a1 a2)
     , Select a2 (AppendUnique a1 a2)
     , a3 ~ AppendUnique a1 a2
@@ -82,9 +81,8 @@ type SelectWith a1 a2 a3 b1 b2 b3 =
 (*&&*)
     :: forall w a1 a2 a3 b1 b2 b3.
     ( C.Category w
-    , Profunctor w
     , Strong w
-    , SelectWith a1 a2 a3 b1 b2 b3
+    , ProduceBoth a1 a2 a3 b1 b2 b3
     )
     => w (Many a1) (Many b1)
     -> w (Many a2) (Many b2)
@@ -93,7 +91,7 @@ x *&&* y = rmap (uncurry (/./)) (lmap (select @a1 &&& select @a2) (first' x) C.>
 infixr 3 *&&* -- like ***
 
 -- | A friendlier constraint synonym for '>&&>'.
-type ThenSelect a2 b1 b2 b3 =
+type ThenProduce a2 b1 b2 b3 =
     ( Select (Complement b1 a2) b1
     , Select a2 b1
     , b3 ~ Append (Complement b1 a2) b2
@@ -102,13 +100,12 @@ type ThenSelect a2 b1 b2 b3 =
 -- | Left-to-right chaining of arrows one after another, where left over input not consumed
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
--- or if the input of the second arrow is not a subset of the output of the first arrow.
+-- or if the input of the second arrow is not a complete subset of the output of the first arrow.
 (>&&>)
     :: forall w a a2 b1 b2 b3.
     ( C.Category w
-    , Profunctor w
     , Strong w
-    , ThenSelect a2 b1 b2 b3
+    , ThenProduce a2 b1 b2 b3
     )
     => w a (Many b1)
     -> w (Many a2) (Many b2)
@@ -119,9 +116,8 @@ infixr 3 >&&> -- like ***
 -- | right-to-left version of '(>&&>)'
 (<&&<) ::
     ( C.Category w
-    , Profunctor w
     , Strong w
-    , ThenSelect a2 b1 b2 b3
+    , ThenProduce a2 b1 b2 b3
     )
     => w (Many a2) (Many b2)
     -> w a (Many b1)
