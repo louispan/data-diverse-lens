@@ -106,16 +106,15 @@ infixr 2 +||+ -- like +++
 type ThenChoose a a2 b1 b2 b3 =
     ( Injected a2 (AppendUnique b1 a2) b2 b3
     , Diversify b1 (AppendUnique b1 a2)
-    , NotEmpty (Complement (AppendUnique b1 a2) b1)
     )
 
 -- | Left-to-right chaining of arrows one after another, where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
--- or if the types are not distinct of each of the argument arrow output,
--- or if the input of the second arrow is not any subset of the output of the first arrow.
--- This is to prevent surprises behaviour of the second arrow being ignored.
--- The compile error will be due to the @NotEmpty (Complement (AppendUnique b1 a2) b1@ constraint.
+-- or if the types are not distinct in each of the argument arrow output.
+-- NB. It is currently not a compile error if the input of the second arrow is distinct from the
+-- output of the first arrrow, in which case this function does not change anything
+-- except to add the types of the second arrow to the output.
 (>||>)
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
