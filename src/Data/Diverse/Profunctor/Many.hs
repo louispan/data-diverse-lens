@@ -48,7 +48,7 @@ itemized w = dimap (\c -> (view item' c, c)) (\(b, c) -> set (item @a) b c) (fir
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many' of one type
 itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])
-itemized' w = dimap fetch single w
+itemized' = dimap fetch single
 
 -- | A friendlier constraint synonym for 'projected'.
 type Projected a1 a2 b1 b2 =
@@ -110,7 +110,7 @@ type ThenProduce a2 b1 b2 b3 =
     => w a (Many b1)
     -> w (Many a2) (Many b2)
     -> w a (Many b3)
-x >&&> y = rmap (uncurry (/./)) (rmap (select @(Complement b1 a2) &&& select @a2) x C.>>> (second' y))
+x >&&> y = rmap (uncurry (/./)) (rmap (select @(Complement b1 a2) &&& select @a2) x C.>>> second' y)
 infixr 3 >&&> -- like ***
 
 -- | right-to-left version of '(>&&>)'

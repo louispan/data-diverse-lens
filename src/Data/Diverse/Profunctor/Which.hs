@@ -24,8 +24,6 @@ module Data.Diverse.Profunctor.Which (
 
 import qualified Control.Category as C
 import Control.Lens
-import Data.Diverse.Which
-import Data.Diverse.TypeLevel
 import Data.Diverse.Lens
 
 -- | A friendlier constraint synonym for 'faceted'.
@@ -46,7 +44,7 @@ faceted w = dimap (matchingFacet @a @x @y)
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
 faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
-faceted' w = dimap obvious pickOnly w
+faceted' = dimap obvious pickOnly
 
 -- | A friendlier constraint synonym for 'injected'.
 type Injected a a' b b' =
@@ -124,7 +122,7 @@ type ThenChoose a a2 b1 b2 b3 =
     => w a (Which b1)
     -> w (Which a2) (Which b2)
     -> w a (Which b3)
-(>||>) hdl1 hdl2 = (rmap diversify hdl1) C.>>> injected @_ @_ @(AppendUnique b1 a2) hdl2
+(>||>) hdl1 hdl2 = rmap diversify hdl1 C.>>> injected @_ @_ @(AppendUnique b1 a2) hdl2
 infixr 2 >||> -- like +||+
 
 -- | right-to-left version of '(>||>)'
