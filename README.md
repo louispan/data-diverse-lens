@@ -5,8 +5,10 @@ Provides "Iso"s & 'Len's for "Data.Diverse.Many" and 'Prism's for "Data.Diverse.
 
 Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master/test/Data/Diverse/Lens/ManySpec.hs) and [WhichSpec.hs](https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/Lens/WhichSpec.hs) for example usages.
 
-
 # Changelog
+
+* 2.2.1.0
+  - Non-breaking tweaks to ProduceBoth, Injected, ChooseBetween
 
 * 2.2.0.0
   - Renamed SelectWith to ProduceBoth, ThenSelect to ThenProduce; added ThenChoose.

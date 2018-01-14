@@ -22,11 +22,11 @@ module Data.Diverse.Profunctor.Many (
     , (<&&<)
     ) where
 
-import qualified Control.Category as C
 import Control.Arrow
+import qualified Control.Category as C
 import Control.Lens
-import Data.Diverse.Many
 import Data.Diverse.Lens.Many
+import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Profunctor
 
@@ -67,8 +67,8 @@ projected _ w = dimap (\c -> (select c, c)) (\(b, c) -> amend @a1 c b) (first' w
 
 -- | A friendlier constraint synonym for '*&&*'.
 type ProduceBoth a1 a2 a3 b1 b2 b3 =
-    ( Select a1 (AppendUnique a1 a2)
-    , Select a2 (AppendUnique a1 a2)
+    ( Select a1 a3
+    , Select a2 a3
     , a3 ~ AppendUnique a1 a2
     , b3 ~ Append b1 b2
     )

@@ -51,8 +51,8 @@ faceted' w = dimap obvious pickOnly w
 -- | A friendlier constraint synonym for 'injected'.
 type Injected a a' b b' =
     ( Reinterpret a a'
-    , Diversify b (AppendUnique (Complement a' a) b)
-    , Diversify (Complement a' a) (AppendUnique (Complement a' a) b)
+    , Diversify b b'
+    , Diversify (Complement a' a) b'
     , b' ~ AppendUnique (Complement a' a) b
     -- extra contraint to prevent surprises (see comment for 'injected')
     , Complement a a' ~ '[]
@@ -72,11 +72,11 @@ injected w = dimap reinterpret (either diversify diversify) (right' w)
 
 -- | A friendlier constraint synonym for '+||+'.
 type ChooseBetween a1 a2 a3 b1 b2 b3 =
-    ( Reinterpret a2 (Append a1 a2)
-    , a1 ~ Complement (Append a1 a2) a2
+    ( Reinterpret a2 a3
+    , a1 ~ Complement a3 a2
     , a3 ~ Append a1 a2
-    , Diversify b1 (AppendUnique b1 b2)
-    , Diversify b2 (AppendUnique b1 b2)
+    , Diversify b1 b3
+    , Diversify b2 b3
     , b3 ~ AppendUnique b1 b2
     )
 
