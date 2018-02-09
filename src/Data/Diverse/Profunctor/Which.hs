@@ -12,7 +12,8 @@ module Data.Diverse.Profunctor.Which (
       -- * Combinators similar to Profunctor Choice
       Faceted
     , faceted
-    , faceted'
+    , onlyFaceted
+    , absurdlyFaceted
     , Injected
     , injected
     , ChooseBetween
@@ -25,6 +26,7 @@ module Data.Diverse.Profunctor.Which (
 import qualified Control.Category as C
 import Control.Lens
 import Data.Diverse.Lens
+import Data.Void
 
 -- | A friendlier constraint synonym for 'faceted'.
 type Faceted a as x b bs y =
@@ -43,8 +45,13 @@ faceted w = dimap (matchingFacet @a @x @y)
                    (right' w)
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
-faceted' :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
-faceted' = dimap obvious pickOnly
+onlyFaceted :: (Profunctor w, Choice w) => w a b -> w (Which '[a]) (Which '[b])
+onlyFaceted = dimap obvious pickOnly
+
+-- | Like 'Choice' or 'ArrowChoice' but lifting into 'Which' of one type
+-- and lifting the Void output to Which '[]
+absurdlyFaceted :: (Profunctor w, Choice w) => w a Void -> w (Which '[a]) (Which '[])
+absurdlyFaceted = dimap obvious absurd
 
 -- | A friendlier constraint synonym for 'injected'.
 type Injected a a' b b' =

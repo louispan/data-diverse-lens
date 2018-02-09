@@ -6,9 +6,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -39,11 +39,12 @@ module Data.Diverse.Lens.Which (
     ) where
 
 import Control.Lens
-import Data.Diverse.Which
 import Data.Diverse.TypeLevel
+import Data.Diverse.Which
 import Data.Generics.Sum
 import Data.Kind
 import Data.Tagged
+import Data.Void
 import GHC.TypeLits
 
 -----------------------------------------------------------------
@@ -66,6 +67,9 @@ class AsFacet a s where
     default facet :: (AsType a s) => Prism' s a
     facet = _Typed
 
+instance AsFacet Void (Which '[]) where
+    facet = prism' absurd impossible
+
 instance UniqueMember x xs => AsFacet x (Which xs) where
     facet = prism' pick trial'
 
@@ -78,11 +82,11 @@ class AsFacet a s => MatchingFacet a s t | s a -> t where
     -- This above causes problems when used monomorphically with @s ~ t@ and @x ~ y@ since
     -- @xs@ cannot equal @ys ~ Remove x x@.
     --
-    -- What is desirec is:
+    -- What is desired is:
     -- (UniqueMember x xs, ys ~ Remove x xs)
     -- => prism_ (pick :: x -> Which xs) (trial :: Which xs -> Either (Which ys) x)
     --
-    -- So we expose the polymorhpic 'matching' explicitly.
+    -- So we expose the polymorphic 'Control.Lens.Prism.matching' explicitly.
     matchingFacet :: s -> Either t a
 
 instance (UniqueMember x xs, ys ~ Remove x xs) => MatchingFacet x (Which xs) (Which ys) where
