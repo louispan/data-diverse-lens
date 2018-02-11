@@ -7,17 +7,13 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
-* 2.3.0.0
-  - Renamed faceted' to onlyFaceted.
-  - Added absurdlyFaceted.
-  - Added "instance AsFacet Void (Which '[])"
-
-* 2.2.1.0
-  - Non-breaking tweaks to ProduceBoth, Injected, ChooseBetween
-
 * 2.2.0.0
   - Renamed SelectWith to ProduceBoth, ThenSelect to ThenProduce; added ThenChoose.
   - Changed semantics of ThenChoose to be more flexible with the second arrow types.
+  - Non-breaking tweaks to ProduceBoth, Injected, ChooseBetween
+  - Renamed faceted' to onlyFaceted.
+  - Added absurdlyFaceted.
+  - Added "instance AsFacet Void (Which '[])"
 
 * 2.1.0.0
   - Removed profunctor variable @w@ from the constraint synonyms for Projected/Injected.

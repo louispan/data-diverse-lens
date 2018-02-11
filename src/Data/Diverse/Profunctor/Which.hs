@@ -104,7 +104,7 @@ type ChooseBetween a1 a2 a3 b1 b2 b3 =
 x +||+ y =
     rmap
         (either diversify diversify)
-        (lmap (reinterpret @a2 @(Append a1 a2)) (left' x) C.>>> right' y)
+        (lmap (reinterpret @a2 @a3) (left' x) C.>>> right' y)
 infixr 2 +||+ -- like +++
 
 -- | A friendlier constraint synonym for '>||>'.
