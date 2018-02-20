@@ -14,7 +14,10 @@ module Data.Diverse.Profunctor.Which (
     , faceted
     , Injected
     , injected
+    , ChooseFrom
+    , ChooseBoth
     , ChooseBetween
+    , chooseBetween
     , (+||+)
     , ThenChoose
     , (>||>)
@@ -63,14 +66,34 @@ injected :: forall w a a' b b'.
     -> w (Which a') (Which b')
 injected w = dimap reinterpret (either diversify diversify) (right' w)
 
--- | A friendlier constraint synonym for '+||+'.
-type ChooseBetween a1 a2 a3 b1 b2 b3 =
-    ( Reinterpret a2 a3
-    , a1 ~ Complement a3 a2
-    , a3 ~ Append a1 a2
-    , Diversify b1 b3
+-- | A friendlier constraint synonym for 'chooseBoth'.
+type ChooseBoth b1 b2 b3 =
+    ( Diversify b1 b3
     , Diversify b2 b3
-    , b3 ~ AppendUnique b1 b2
+    , b3 ~ AppendUnique b1 b2 -- ^ Redundant constraint: but narrows down @b3@
+    )
+
+-- chooseBoth ::
+--     ( C.Category w
+--     , Strong w
+--     , ChooseBoth b1 b2 b3
+--     )
+--     => w a (Which b1)
+--     -> w a (Which b2)
+--     -> w a (Which b3, Which b3)
+-- chooseBoth x y = lmap (\a -> (a, a)) (first' (rmap diversify x)) C.>>> (second' (rmap diversify y))
+-- infixr 2 `chooseBoth` -- like +++
+
+-- | A friendlier constraint synonym for 'chooseFrom'.
+type ChooseFrom a1 a2 a3 =
+    ( Reinterpreted a2 a3 a1
+    , a3 ~ Append a1 a2 -- ^ Redundant constraint: but narrows down @a3@
+    )
+
+-- | A friendlier constraint synonym for 'chooseBetween'.
+type ChooseBetween a1 a2 a3 b1 b2 b3 =
+    ( ChooseFrom a1 a2 a3
+    , ChooseBoth b1 b2 b3
     )
 
 -- | Split the input between the two argument arrows, retagging and merging their outputs.
@@ -80,19 +103,30 @@ type ChooseBetween a1 a2 a3 b1 b2 b3 =
 -- This is to prevent accidently processing an input type twice.
 -- The compile error will be due to @(Append a1 a2)@ which will not satisfy
 -- @UniqueMember@ constraints in 'Reinterpret'.
-(+||+)
-    :: forall w a1 a2 a3 b1 b2 b3.
-       ( C.Category w
-       , Choice w
-       , ChooseBetween a1 a2 a3 b1 b2 b3
-       )
+chooseBetween :: forall w a1 a2 a3 b1 b2 b3.
+    ( C.Category w
+    , Choice w
+    , ChooseFrom a1 a2 a3
+    , ChooseBoth b1 b2 b3
+    )
     => w (Which a1) (Which b1)
     -> w (Which a2) (Which b2)
     -> w (Which a3) (Which b3)
-x +||+ y =
+x `chooseBetween` y =
     rmap
         (either diversify diversify)
         (lmap (reinterpret @a2 @a3) (left' x) C.>>> right' y)
+infixr 2 `chooseBetween` -- like +++
+
+(+||+) ::
+    ( C.Category w
+    , Choice w
+    , ChooseBetween a1 a2 a3 b1 b2 b3
+    )
+    => w (Which a1) (Which b1)
+    -> w (Which a2) (Which b2)
+    -> w (Which a3) (Which b3)
+(+||+) = chooseBetween
 infixr 2 +||+ -- like +++
 
 -- | A friendlier constraint synonym for '>||>'.
@@ -131,4 +165,4 @@ infixr 2 >||> -- like +||+
     -> w a (Which b1)
     -> w a (Which b3)
 (<||<) = flip (>||>)
-infixl 2 <||< -- like >||>
+infixr 2 <||< -- like >||>

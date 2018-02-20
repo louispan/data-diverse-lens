@@ -123,4 +123,4 @@ infixr 3 >&&> -- like ***
     -> w a (Many b1)
     -> w a (Many b3)
 (<&&<) = flip (>&&>)
-infixl 2 <&&< -- like >&&>
+infixr 3 <&&< -- like >&&>
