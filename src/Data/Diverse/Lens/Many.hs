@@ -48,11 +48,11 @@ module Data.Diverse.Lens.Many (
     ) where
 
 import Control.Lens
-import Data.Tagged
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Generics.Product
 import Data.Kind
+import Data.Tagged
 import GHC.TypeLits
 
 -- | @_Many = iso fromMany toMany@
@@ -82,12 +82,18 @@ class HasItem' a s where
 instance UniqueMember x xs => HasItem' x (Many xs) where
     item' = lens fetch replace'
 
+instance HasItem' x x where
+    item' = id
+
 -- | Polymorphic version of 'item''
 class HasItem a b s t | s a b -> t, t a b -> s where
     item :: Lens s t a b
 
 instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many ys) where
     item = lens fetch (replace @x @y)
+
+instance HasItem x x x x where
+    item = id
 
 -- | 'fetchL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
