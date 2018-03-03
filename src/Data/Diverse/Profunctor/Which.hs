@@ -19,7 +19,6 @@ module Data.Diverse.Profunctor.Which (
     , ChooseBetween
     , chooseBetween
     , (+||+)
-    , ThenChoose
     , (>||>)
     , (<||<)
     ) where
@@ -45,26 +44,24 @@ faceted w = dimap (matchingFacet @a @x @y)
                    (right' w)
 
 -- | A friendlier constraint synonym for 'injected'.
-type Injected a a' b b' =
-    ( Reinterpret a a'
-    , Diversify b b'
-    , Diversify (Complement a' a) b'
-    , b' ~ AppendUnique (Complement a' a) b
+type Injected a2 a3 b2 b3 =
+    ( Reinterpret a2 a3
+    , ChooseBoth (Complement a3 a2) b2 b3
     -- extra contraint to prevent surprises (see comment for 'injected')
-    , Complement a a' ~ '[]
+    , Complement a2 a3 ~ '[]
     )
 
 -- | Like 'Choice' or 'ArrowChoice' but lifting from 'Which' into another type of 'Which'
 -- NB. It is a compile error if all of the input types in the second arrow @a@
 -- is not the output types of the first arrow.
--- This prevents surprising behaviour where the second arrow is ignored.
-injected :: forall w a a' b b'.
+-- This prevents surprising behaviour where the second arrow is completely ignored.
+injected :: forall w a2 a3 b2 b3.
     ( Choice w
-    , Injected a a' b b'
+    , Injected a2 a3 b2 b3
     )
-    => w (Which a) (Which b)
-    -> w (Which a') (Which b')
-injected w = dimap reinterpret (either diversify diversify) (right' w)
+    => w (Which a2) (Which b2)
+    -> w (Which a3) (Which b3)
+injected w = dimap (reinterpret @a2 @a3) (either diversify diversify) (right' w)
 
 -- | A friendlier constraint synonym for 'chooseBoth'.
 type ChooseBoth b1 b2 b3 =
@@ -86,7 +83,9 @@ type ChooseBoth b1 b2 b3 =
 
 -- | A friendlier constraint synonym for 'chooseFrom'.
 type ChooseFrom a1 a2 a3 =
-    ( Reinterpreted a2 a3 a1
+    -- ( Reinterpreted a2 a3 a1 -- a1 ~ Complement a3 a2
+    ( Reinterpret a2 a3-- a1 ~ Complement a3 a2
+    , a1 ~ Complement a3 a2
     , a3 ~ Append a1 a2 -- ^ Redundant constraint: but narrows down @a3@
     )
 
@@ -129,12 +128,6 @@ infixr 2 `chooseBetween` -- like +++
 (+||+) = chooseBetween
 infixr 2 +||+ -- like +++
 
--- | A friendlier constraint synonym for '>||>'.
-type ThenChoose a a2 b1 b2 b3 =
-    ( Injected a2 (AppendUnique b1 a2) b2 b3
-    , Diversify b1 (AppendUnique b1 a2)
-    )
-
 -- | Left-to-right chaining of arrows one after another, where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
@@ -146,12 +139,12 @@ type ThenChoose a a2 b1 b2 b3 =
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
-       , ThenChoose a a2 b1 b2 b3
+       , Injected a2 b1 b2 b3
        )
     => w a (Which b1)
     -> w (Which a2) (Which b2)
     -> w a (Which b3)
-(>||>) hdl1 hdl2 = rmap diversify hdl1 C.>>> injected @_ @_ @(AppendUnique b1 a2) hdl2
+(>||>) hdl1 hdl2 = hdl1 C.>>> injected hdl2
 infixr 2 >||> -- like +||+
 
 -- | right-to-left version of '(>||>)'
@@ -159,10 +152,11 @@ infixr 2 >||> -- like +||+
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
-       , ThenChoose a a2 b1 b2 b3
+       , Injected a2 b1 b2 b3
        )
     => w (Which a2) (Which b2)
     -> w a (Which b1)
     -> w a (Which b3)
 (<||<) = flip (>||>)
 infixr 2 <||< -- like >||>
+

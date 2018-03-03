@@ -8,11 +8,10 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 # Changelog
 
 * 2.2.0.0
-  - Renamed `SelectWith` to `ProduceBoth`, `ThenSelect` to `ThenProduce`; added `ThenChoose`.
-  - Changed semantics of `ThenChoose` to be more flexible with the second arrow types.
+  - Renamed `SelectWith` to `ProduceBoth`, `ThenSelect` to `ThenProduce`
   - Non-breaking tweaks to `ProduceBoth`, `Injected`, `ChooseBetween`
   - Removed `faceted'`
-  - Added `instance AsFacet Void (Which '[])`
+  - Added `instance AsFacet Void (Which '[])` and `instance AsFacet (Which '[]) Void`
 
 * 2.1.0.0
   - Removed profunctor variable `w` from the constraint synonyms for `Projected`/`Injected`.

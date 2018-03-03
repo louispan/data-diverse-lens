@@ -70,6 +70,9 @@ class AsFacet a s where
 instance AsFacet Void (Which '[]) where
     facet = prism' absurd impossible
 
+instance AsFacet (Which '[]) Void where
+    facet = prism' impossible absurd
+
 instance AsFacet x x where
     facet = id
 
