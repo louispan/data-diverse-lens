@@ -16,11 +16,12 @@ module Data.Diverse.Profunctor.Which (
     , injected
     , ChooseFrom
     , ChooseBoth
-    , ChooseBetween
+    -- , ChooseBetween
     , chooseBetween
-    , (+||+)
-    , (>||>)
-    , (<||<)
+    , thenChoose
+    -- , (+||+)
+    -- , (>||>)
+    -- , (<||<)
     ) where
 
 import qualified Control.Category as C
@@ -89,11 +90,11 @@ type ChooseFrom a1 a2 a3 =
     , a3 ~ Append a1 a2 -- ^ Redundant constraint: but narrows down @a3@
     )
 
--- | A friendlier constraint synonym for 'chooseBetween'.
-type ChooseBetween a1 a2 a3 b1 b2 b3 =
-    ( ChooseFrom a1 a2 a3
-    , ChooseBoth b1 b2 b3
-    )
+-- -- | A friendlier constraint synonym for 'chooseBetween'.
+-- type ChooseBetween a1 a2 a3 b1 b2 b3 =
+--     ( ChooseFrom a1 a2 a3
+--     , ChooseBoth b1 b2 b3
+--     )
 
 -- | Split the input between the two argument arrows, retagging and merging their outputs.
 -- The output is merged into a 'Which' of unique types.
@@ -117,16 +118,16 @@ x `chooseBetween` y =
         (lmap (reinterpret @a2 @a3) (left' x) C.>>> right' y)
 infixr 2 `chooseBetween` -- like +++
 
-(+||+) ::
-    ( C.Category w
-    , Choice w
-    , ChooseBetween a1 a2 a3 b1 b2 b3
-    )
-    => w (Which a1) (Which b1)
-    -> w (Which a2) (Which b2)
-    -> w (Which a3) (Which b3)
-(+||+) = chooseBetween
-infixr 2 +||+ -- like +++
+-- (+||+) ::
+--     ( C.Category w
+--     , Choice w
+--     , ChooseBetween a1 a2 a3 b1 b2 b3
+--     )
+--     => w (Which a1) (Which b1)
+--     -> w (Which a2) (Which b2)
+--     -> w (Which a3) (Which b3)
+-- (+||+) = chooseBetween
+-- infixr 2 +||+ -- like +++
 
 -- | Left-to-right chaining of arrows one after another, where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
@@ -135,7 +136,7 @@ infixr 2 +||+ -- like +++
 -- NB. It is currently not a compile error if the input of the second arrow is distinct from the
 -- output of the first arrrow, in which case this function does not change anything
 -- except to add the types of the second arrow to the output.
-(>||>)
+thenChoose
     :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
@@ -144,19 +145,19 @@ infixr 2 +||+ -- like +++
     => w a (Which b1)
     -> w (Which a2) (Which b2)
     -> w a (Which b3)
-(>||>) hdl1 hdl2 = hdl1 C.>>> injected hdl2
-infixr 2 >||> -- like +||+
+hdl1 `thenChoose` hdl2 = hdl1 C.>>> injected hdl2
+infixr 2 `thenChoose` -- like +++
 
--- | right-to-left version of '(>||>)'
-(<||<)
-    :: forall w a a2 b1 b2 b3.
-       ( C.Category w
-       , Choice w
-       , Injected a2 b1 b2 b3
-       )
-    => w (Which a2) (Which b2)
-    -> w a (Which b1)
-    -> w a (Which b3)
-(<||<) = flip (>||>)
-infixr 2 <||< -- like >||>
+-- -- | right-to-left version of '(>||>)'
+-- (<||<)
+--     :: forall w a a2 b1 b2 b3.
+--        ( C.Category w
+--        , Choice w
+--        , Injected a2 b1 b2 b3
+--        )
+--     => w (Which a2) (Which b2)
+--     -> w a (Which b1)
+--     -> w a (Which b3)
+-- (<||<) = flip (>||>)
+-- infixr 2 <||< -- like >||>
 

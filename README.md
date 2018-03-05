@@ -8,8 +8,8 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 # Changelog
 
 * 2.2.0.0
-  - Renamed `SelectWith` to `ProduceBoth`, `ThenSelect` to `ThenProduce`
-  - Non-breaking tweaks to `ProduceBoth`, `Injected`, `ChooseBetween`
+  - Renamed `SelectWith` to `MakeFrom`, split `ChooseBtween` to `ChooseBoth` and `ChooseFrom`.
+  - Removed hard to remember operators ``>&&>` `*&&*` `+||+` `>||>`
   - Removed `faceted'`
   - Added `instance AsFacet Void (Which '[])` and `instance AsFacet (Which '[]) Void`
 
