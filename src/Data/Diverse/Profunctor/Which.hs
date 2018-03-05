@@ -12,18 +12,23 @@ module Data.Diverse.Profunctor.Which (
       -- * Combinators similar to Profunctor Choice
       Faceted
     , faceted
+    , facetedK
     , Injected
     , injected
+    , injectedK
     , ChooseFrom
     , ChooseBoth
     -- , ChooseBetween
     , chooseBetween
+    , chooseBetweenK
     , thenChoose
+    , thenChooseK
     -- , (+||+)
     -- , (>||>)
     -- , (<||<)
     ) where
 
+import Control.Arrow
 import qualified Control.Category as C
 import Control.Lens
 import Data.Diverse.Lens
@@ -44,6 +49,14 @@ faceted w = dimap (matchingFacet @a @x @y)
                    (either id (review facet))
                    (right' w)
 
+-- | 'faceted' under 'Kleisli'
+facetedK :: forall m a as x b bs y.
+    ( Monad m
+    , Faceted a as x b bs y
+    )
+    => (a -> m b) -> (x -> m y)
+facetedK f = runKleisli . faceted $ Kleisli f
+
 -- | A friendlier constraint synonym for 'injected'.
 type Injected a2 a3 b2 b3 =
     ( Reinterpret a2 a3
@@ -63,6 +76,15 @@ injected :: forall w a2 a3 b2 b3.
     => w (Which a2) (Which b2)
     -> w (Which a3) (Which b3)
 injected w = dimap (reinterpret @a2 @a3) (either diversify diversify) (right' w)
+
+-- | 'injected' under 'Kleisli'
+injectedK :: forall m a2 a3 b2 b3.
+    ( Monad m
+    , Injected a2 a3 b2 b3
+    )
+    => (Which a2 -> m (Which b2))
+    -> (Which a3 -> m (Which b3))
+injectedK f = runKleisli . injected $ Kleisli f
 
 -- | A friendlier constraint synonym for 'chooseBoth'.
 type ChooseBoth b1 b2 b3 =
@@ -118,6 +140,15 @@ x `chooseBetween` y =
         (lmap (reinterpret @a2 @a3) (left' x) C.>>> right' y)
 infixr 2 `chooseBetween` -- like +++
 
+-- | 'chooseBetween' under 'Kleisli'
+chooseBetweenK :: forall m a1 a2 a3 b1 b2 b3.
+    (Monad m, ChooseFrom a1 a2 a3, ChooseBoth b1 b2 b3)
+    => (Which a1 -> m (Which b1))
+    -> (Which a2 -> m (Which b2))
+    -> (Which a3 -> m (Which b3))
+chooseBetweenK f g = runKleisli $ chooseBetween (Kleisli f) (Kleisli g)
+infixr 2 `chooseBetweenK` -- like +++
+
 -- (+||+) ::
 --     ( C.Category w
 --     , Choice w
@@ -136,8 +167,7 @@ infixr 2 `chooseBetween` -- like +++
 -- NB. It is currently not a compile error if the input of the second arrow is distinct from the
 -- output of the first arrrow, in which case this function does not change anything
 -- except to add the types of the second arrow to the output.
-thenChoose
-    :: forall w a a2 b1 b2 b3.
+thenChoose :: forall w a a2 b1 b2 b3.
        ( C.Category w
        , Choice w
        , Injected a2 b1 b2 b3
@@ -147,6 +177,15 @@ thenChoose
     -> w a (Which b3)
 hdl1 `thenChoose` hdl2 = hdl1 C.>>> injected hdl2
 infixr 2 `thenChoose` -- like +++
+
+-- | 'thenChoose' under 'Kleisli'
+thenChooseK :: forall m a a2 b1 b2 b3.
+       (Monad m, Injected a2 b1 b2 b3)
+    => (a -> m (Which b1))
+    -> (Which a2 -> m (Which b2))
+    -> (a -> m (Which b3))
+thenChooseK f g = runKleisli $ thenChoose (Kleisli f) (Kleisli g)
+infixr 2 `thenChooseK` -- like +++
 
 -- -- | right-to-left version of '(>||>)'
 -- (<||<)

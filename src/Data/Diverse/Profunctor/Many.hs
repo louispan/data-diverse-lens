@@ -12,13 +12,16 @@ module Data.Diverse.Profunctor.Many (
       -- * Combinators similar to Profunctor Strong
       Itemized
     , itemized
-    , itemized'
+    , itemizedK
     , Projected
     , projected
+    , projectedK
     , MakeFrom
     , MakeBoth
     , makeBesides
+    , makeBesidesK
     , thenMake
+    , thenMakeK
     ) where
 
 import Control.Arrow
@@ -45,9 +48,14 @@ itemized ::
     => w a b -> w s t
 itemized w = dimap (\c -> (view item' c, c)) (\(b, c) -> set (item @a) b c) (first' w)
 
--- | Like 'Strong' or 'Arrow' but lifting into 'Many' of one type
-itemized' :: Profunctor w => w a b -> w (Many '[a]) (Many '[b])
-itemized' = dimap fetch single
+-- | 'itemized' under 'Kleisli'
+itemizedK ::
+    forall m a b s t.
+    ( Monad m
+    , Itemized a b s t
+    )
+    => (a -> m b) -> (s -> m t)
+itemizedK f = runKleisli . itemized $ Kleisli f
 
 -- | A friendlier constraint synonym for 'projected'.
 type Projected a1 a2 b1 b2 =
@@ -63,6 +71,14 @@ projected :: forall w a1 a2 b1 b2.
     )
     => w (Many a1) (Many b1) -> w (Many a2) (Many b2)
 projected w = dimap (\c -> (select c, c)) (\(b, c) -> amend @a1 @b1 @a2 c b) (first' w)
+
+-- | 'projected' under 'Kleisli'
+projectedK :: forall m a1 a2 b1 b2.
+    ( Monad m
+    , Projected a1 a2 b1 b2
+    )
+    => (Many a1 -> m (Many b1)) -> (Many a2 -> m (Many b2))
+projectedK f = runKleisli . projected $ Kleisli f
 
 -- | A friendlier constraint synonym for '*&&*'.
 type MakeBoth b1 b2 b3 =
@@ -93,12 +109,23 @@ makeBesides
 x `makeBesides` y = rmap (uncurry (/./)) (lmap (select @a1 &&& select @a2) (first' x) C.>>> second' y)
 infixr 3 `makeBesides` -- like ***
 
+makeBesidesK
+    :: forall m a1 a2 a3 b1 b2 b3.
+    ( Monad m
+    , MakeFrom a1 a2 a3
+    , MakeBoth b1 b2 b3
+    )
+    => (Many a1 -> m (Many b1))
+    -> (Many a2 -> m (Many b2))
+    -> (Many a3 -> m (Many b3))
+makeBesidesK f g = runKleisli $ makeBesides (Kleisli f) (Kleisli g)
+infixr 3 `makeBesidesK` -- like ***
+
 -- | Left-to-right chaining of arrows one after another, where left over input not consumed
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
 -- or if the input of the second arrow is not a complete subset of the output of the first arrow.
-thenMake
-    :: forall w a a2 b1 b2 b3.
+thenMake :: forall w a a2 b1 b2 b3.
     ( C.Category w
     , Strong w
     , Projected a2 b1 b2 b3
@@ -108,3 +135,13 @@ thenMake
     -> w a (Many b3)
 x `thenMake` y = x C.>>> projected y
 infixr 3 `thenMake` -- like ***
+
+thenMakeK :: forall m a a2 b1 b2 b3.
+    ( Monad m
+    , Projected a2 b1 b2 b3
+    )
+    => (a -> m (Many b1))
+    -> (Many a2 -> m (Many b2))
+    -> (a -> m (Many b3))
+thenMakeK f g = runKleisli $ thenMake (Kleisli f) (Kleisli g)
+infixr 3 `thenMakeK` -- like ***
