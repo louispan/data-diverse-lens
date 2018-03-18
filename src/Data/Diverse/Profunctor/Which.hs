@@ -23,15 +23,19 @@ module Data.Diverse.Profunctor.Which (
     , chooseBetweenK
     , thenChoose
     , thenChooseK
+    , also
+    , alternatively
     -- , (+||+)
     -- , (>||>)
     -- , (<||<)
     ) where
 
+import Control.Applicative
 import Control.Arrow
 import qualified Control.Category as C
 import Control.Lens
 import Data.Diverse.Lens
+import Data.Semigroup
 
 -- | A friendlier constraint synonym for 'faceted'.
 type Faceted a as x b bs y =
@@ -199,4 +203,14 @@ infixr 2 `thenChooseK` -- like +++
 --     -> w a (Which b3)
 -- (<||<) = flip (>||>)
 -- infixr 2 <||< -- like >||>
+
+------------------------------------------
+
+also :: (Semigroup (f (Which a3)), Functor f, ChooseBoth a1 a2 a3) => f (Which a1) -> f (Which a2) -> f (Which a3)
+also x y = (diversify <$> x) <> (diversify <$> y)
+infixr 6 `also` -- like mappend
+
+alternatively :: (Alternative f, ChooseBoth a1 a2 a3) => f (Which a1) -> f (Which a2) -> f (Which a3)
+alternatively x y = (diversify <$> x) <|> (diversify <$> y)
+infixl 3 `alternatively` -- like <|>
 

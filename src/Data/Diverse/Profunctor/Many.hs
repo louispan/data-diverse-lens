@@ -145,3 +145,17 @@ thenMakeK :: forall m a a2 b1 b2 b3.
     -> (a -> m (Many b3))
 thenMakeK f g = runKleisli $ thenMake (Kleisli f) (Kleisli g)
 infixr 3 `thenMakeK` -- like ***
+
+-----
+
+-- type Besides a1 a2 a3 = (a3 ~ Append a1 a2)
+
+-- besides :: (Applicative f, Besides a1 a2 a3)
+--     => f (Many a1) -> f (Many a2) -> f (Many a3)
+-- besides x y = liftA2 (/./) x y
+-- infixr 5 `besides` -- like (/./) and (++)
+
+-- besides2 :: (Biapplicative f, Besides a1 a2 a3, Besides b1 b2 b3)
+--     => f (Many a1) (Many b1) -> f (Many a2) (Many b2) -> f (Many a3) (Many b3)
+-- besides2 x y = biliftA2 (/./) (/./) x y
+-- infixr 5 `besides2` -- like (/./) and (++)
