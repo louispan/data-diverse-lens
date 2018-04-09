@@ -65,7 +65,7 @@ _Many' = iso fromMany' toMany'
 
 -----------------------------------------------------------------------
 
--- | 'fetch' ('view' 'item') and 'replace'' ('set' 'item'') in 'Lens'' form.
+-- | 'grab' ('view' 'item') and 'replace'' ('set' 'item'') in 'Lens'' form.
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
@@ -80,7 +80,7 @@ class HasItem' a s where
     item' = typed
 
 instance UniqueMember x xs => HasItem' x (Many xs) where
-    item' = lens fetch replace'
+    item' = lens grab replace'
 
 instance HasItem' x x where
     item' = id
@@ -90,12 +90,12 @@ class HasItem a b s t | s a b -> t, t a b -> s where
     item :: Lens s t a b
 
 instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many ys) where
-    item = lens fetch (replace @x @y)
+    item = lens grab (replace @x @y)
 
 instance HasItem x x x x where
     item = id
 
--- | 'fetchL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
+-- | 'grabL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
 -- @
 -- let x = (5 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' 'nil'
@@ -106,7 +106,7 @@ class HasItemL' (l :: k) a s | s l -> a where
     itemL' :: Lens' s a
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many xs) where
-    itemL' = lens (fetchL @l) (replaceL' @l)
+    itemL' = lens (grabL @l) (replaceL' @l)
 
 -- | Polymorphic version of 'itemL''
 --
@@ -119,7 +119,7 @@ class HasItemL (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s whe
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Replace x y xs)
   => HasItemL l x y (Many xs) (Many ys) where
-    itemL = lens (fetchL @l) (replaceL @l)
+    itemL = lens (grabL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags the field.
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
@@ -133,7 +133,7 @@ class HasItemTag' (l :: k) a s where
     itemTag' :: Lens' s a
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => HasItemTag' l x (Many xs) where
-    itemTag' = lens (fetchTag @l) (replaceTag' @l)
+    itemTag' = lens (grabTag @l) (replaceTag' @l)
 
 -- | Variation of 'itemL' that automatically tags and untags the field.
 class HasItemTag (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
@@ -146,9 +146,9 @@ class HasItemTag (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s w
 
 instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (Tagged l x) (Tagged l y) xs)
   => HasItemTag l x y (Many xs) (Many ys) where
-    itemTag = lens (fetchTag @l) (replaceTag @l)
+    itemTag = lens (grabTag @l) (replaceTag @l)
 
--- | 'fetchN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
+-- | 'grabN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' ./ nil
@@ -159,7 +159,7 @@ class HasItemN' (n :: Nat) a s | s n -> a where
     itemN' :: Lens' s a
 
 instance (MemberAt n x xs) => HasItemN' n x (Many xs) where
-    itemN' = lens (fetchN @n) (replaceN' @n)
+    itemN' = lens (grabN @n) (replaceN' @n)
 
 -- | Polymorphic version of 'itemN''
 class HasItemN (n :: Nat) a b s t | s n -> a, t n -> b, s n b -> t, t n a -> s where
@@ -171,7 +171,7 @@ class HasItemN (n :: Nat) a b s t | s n -> a, t n -> b, s n b -> t, t n a -> s w
 
 instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
   => HasItemN n x y (Many xs) (Many ys) where
-    itemN = lens (fetchN @n) (replaceN @n)
+    itemN = lens (grabN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
 

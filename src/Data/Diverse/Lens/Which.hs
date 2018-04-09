@@ -119,7 +119,7 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Remove x xs)
   => MatchingFacetL l x (Which xs) (Which ys) where
     matchingFacetL = trialL @l
 
--- | Variation of 'fetchL' specialized to 'Tagged' which automatically tags and untags the field.
+-- | Variation of 'grabL' specialized to 'Tagged' which automatically tags and untags the field.
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
 -- when @l@ can actually be any kind.
 -- Create instances of 'AsFacetTag'' using "Data.Generics.Sum.Constructors" as follows:
