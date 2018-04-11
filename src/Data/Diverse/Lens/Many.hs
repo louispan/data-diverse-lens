@@ -82,18 +82,14 @@ class HasItem' a s where
 instance UniqueMember x xs => HasItem' x (Many xs) where
     item' = lens grab replace'
 
-instance HasItem' x x where
-    item' = id
-
 -- | Polymorphic version of 'item''
-class HasItem a b s t | s a b -> t, t a b -> s where
-    item :: Lens s t a b
+class HasItem' a s => HasItem a s where
+    type Replaced a b s
+    item :: Lens s (Replaced a b s) a b
 
-instance (UniqueMember x xs, ys ~ Replace x y xs) => HasItem x y (Many xs) (Many ys) where
-    item = lens grab (replace @x @y)
-
-instance HasItem x x x x where
-    item = id
+instance (UniqueMember x xs) => HasItem x (Many xs) where
+    type Replaced a b (Many xs) = Many (Replace a b xs)
+    item = lens grab (replace @x)
 
 -- | 'grabL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
@@ -102,6 +98,15 @@ instance HasItem x x x x where
 -- x '^.' 'itemL'' \@Foo \`shouldBe` Tagged \@Foo False
 -- (x '&' 'itemL'' \@Foo '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
+--
+-- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
+-- when @l@ can actually be any kind.
+-- Create instances of 'HasItemL'' using "Data.Generics.Product.Fields" as follows:
+-- @
+-- instance HasField' l Foo a => itemL' l a Foo where
+--     itemL' = field @l
+-- default itemL' :: forall (l :: Symbol) a s. (HasField' l s a) => Lens' s a
+-- itemL' = field @l
 class HasItemL' (l :: k) a s | s l -> a where
     itemL' :: Lens' s a
 
@@ -114,39 +119,29 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many x
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
 -- (x '&' 'itemL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
-class HasItemL (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
-    itemL :: Lens s t a b
+class HasItemL' (l :: k) a s => HasItemL (l :: k) a s | s l -> a where
+    type ReplacedL l b s
+    itemL :: Lens s (ReplacedL l b s) a b
 
-instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Replace x y xs)
-  => HasItemL l x y (Many xs) (Many ys) where
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL l x (Many xs) where
+    type ReplacedL l b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
     itemL = lens (grabL @l) (replaceL @l)
 
--- | Variation of 'itemL'' that automatically tags and untags the field.
--- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
--- when @l@ can actually be any kind.
--- Create instances of 'HasItemTag'' using "Data.Generics.Product.Fields" as follows:
+-- | Variation of 'itemL'' that automatically tags and untags a Tagged field.
 -- @
--- instance HasField' l Foo a => HasItemTag' l a Foo where
---     itemTag' = field @l
--- @
-class HasItemTag' (l :: k) a s where
+class HasItemL' l (Tagged l a) s => HasItemTag' (l :: k) a s where
     itemTag' :: Lens' s a
 
-instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => HasItemTag' l x (Many xs) where
-    itemTag' = lens (grabTag @l) (replaceTag' @l)
+instance HasItemL' l (Tagged l a) s => HasItemTag' (l :: k) a s where
+    itemTag' = itemL' @l . iso unTagged Tagged
 
--- | Variation of 'itemL' that automatically tags and untags the field.
-class HasItemTag (l :: k) a b s t | s l -> a, t l -> b, s l b -> t, t l a -> s where
-    itemTag :: Lens s t a b
+-- | Polymorphic version of 'itemTag''
+-- @
+class HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
+    itemTag :: Lens s (ReplacedL l (Tagged l b) s) a b
 
--- -- | Make it easy to create an instance of 'itemTag' using 'Data.Generics.Product.Fields'
--- -- NB. This is not a default signature for HasItemTag, as this makes GHC think that l must be type 'Symbol'
--- genericItemTag :: forall l a b s t. (HasField l s t a b) => Lens s t a b
--- genericItemTag = field @l
-
-instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Replace (Tagged l x) (Tagged l y) xs)
-  => HasItemTag l x y (Many xs) (Many ys) where
-    itemTag = lens (grabTag @l) (replaceTag @l)
+instance HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
+    itemTag = itemL @l . iso unTagged (Tagged @l)
 
 -- | 'grabN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
 --
@@ -162,15 +157,17 @@ instance (MemberAt n x xs) => HasItemN' n x (Many xs) where
     itemN' = lens (grabN @n) (replaceN' @n)
 
 -- | Polymorphic version of 'itemN''
-class HasItemN (n :: Nat) a b s t | s n -> a, t n -> b, s n b -> t, t n a -> s where
-    itemN :: Lens s t a b
+class HasItemN (n :: Nat) a s | s n -> a where
+    type ReplacedN n b s
+    itemN :: Lens s (ReplacedN n b s) a b
 
     -- | Make it easy to create an instance of 'itemN' using 'Data.Generics.Product.Positions'
-    default itemN :: (HasPosition n s t a b) => Lens s t a b
+    default itemN :: (HasPosition n s (ReplacedN n b s) a b) => Lens s (ReplacedN n b s) a b
     itemN = position @n
 
-instance (MemberAt n x xs, ys ~ ReplaceIndex n y xs)
-  => HasItemN n x y (Many xs) (Many ys) where
+instance (MemberAt n x xs)
+  => HasItemN n x (Many xs) where
+    type ReplacedN n b (Many xs) = Many (ReplaceIndex n b xs)
     itemN = lens (grabN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
