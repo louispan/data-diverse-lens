@@ -83,7 +83,7 @@ instance UniqueMember x xs => HasItem' x (Many xs) where
     item' = lens grab replace'
 
 -- | Polymorphic version of 'item''
-class HasItem' a s => HasItem a s where
+class (HasItem' a s, Replaced a a s ~ s) => HasItem a s where
     type Replaced a b s
     item :: Lens s (Replaced a b s) a b
 
@@ -119,12 +119,12 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many x
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
 -- (x '&' 'itemL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
-class HasItemL' (l :: k) a s => HasItemL (l :: k) a s | s l -> a where
-    type ReplacedL l b s
-    itemL :: Lens s (ReplacedL l b s) a b
+class (HasItemL' (l :: k) a s, ReplacedL l a a s ~ s) => HasItemL (l :: k) a s | s l -> a where
+    type ReplacedL l a b s
+    itemL :: Lens s (ReplacedL l a b s) a b
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL l x (Many xs) where
-    type ReplacedL l b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
+    type ReplacedL l _ b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
     itemL = lens (grabL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags a Tagged field.
@@ -138,7 +138,7 @@ instance HasItemL' l (Tagged l a) s => HasItemTag' (l :: k) a s where
 -- | Polymorphic version of 'itemTag''
 -- @
 class HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
-    itemTag :: Lens s (ReplacedL l (Tagged l b) s) a b
+    itemTag :: Lens s (ReplacedL l (Tagged l a) (Tagged l b) s) a b
 
 instance HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
     itemTag = itemL @l . iso unTagged (Tagged @l)
@@ -157,17 +157,17 @@ instance (MemberAt n x xs) => HasItemN' n x (Many xs) where
     itemN' = lens (grabN @n) (replaceN' @n)
 
 -- | Polymorphic version of 'itemN''
-class HasItemN (n :: Nat) a s | s n -> a where
-    type ReplacedN n b s
-    itemN :: Lens s (ReplacedN n b s) a b
+class (HasItemN' (n :: Nat) a s, ReplacedN n a a s ~ s) => HasItemN (n :: Nat) a s | s n -> a where
+    type ReplacedN n a b s
+    itemN :: Lens s (ReplacedN n a b s) a b
 
     -- | Make it easy to create an instance of 'itemN' using 'Data.Generics.Product.Positions'
-    default itemN :: (HasPosition n s (ReplacedN n b s) a b) => Lens s (ReplacedN n b s) a b
+    default itemN :: (HasPosition n s (ReplacedN n a b s) a b) => Lens s (ReplacedN n a b s) a b
     itemN = position @n
 
 instance (MemberAt n x xs)
   => HasItemN n x (Many xs) where
-    type ReplacedN n b (Many xs) = Many (ReplaceIndex n b xs)
+    type ReplacedN n a b (Many xs) = Many (ReplaceIndex n a b xs)
     itemN = lens (grabN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
