@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 3.0.0.1
+  - Fixed GHC 8.2.2 "Type indexes must match class instance head" compile error.
+
 * 3.0.0.0
   - Renamed `SelectWith` to `MakeFrom`, split `ChooseBtween` to `ChooseBoth` and `ChooseFrom`.
   - Removed hard to remember operators ``>&&>` `*&&*` `+||+` `>||>`

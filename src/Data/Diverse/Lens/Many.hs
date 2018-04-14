@@ -88,7 +88,7 @@ class (HasItem' a s, Replaced a a s ~ s) => HasItem a s where
     item :: Lens s (Replaced a b s) a b
 
 instance (UniqueMember x xs) => HasItem x (Many xs) where
-    type Replaced a b (Many xs) = Many (Replace a b xs)
+    type Replaced x b (Many xs) = Many (Replace x b xs)
     item = lens grab (replace @x)
 
 -- | 'grabL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
@@ -124,7 +124,7 @@ class (HasItemL' (l :: k) a s, ReplacedL l a a s ~ s) => HasItemL (l :: k) a s |
     itemL :: Lens s (ReplacedL l a b s) a b
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL l x (Many xs) where
-    type ReplacedL l _ b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
+    type ReplacedL l x b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
     itemL = lens (grabL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags a Tagged field.
@@ -167,7 +167,7 @@ class (HasItemN' (n :: Nat) a s, ReplacedN n a a s ~ s) => HasItemN (n :: Nat) a
 
 instance (MemberAt n x xs)
   => HasItemN n x (Many xs) where
-    type ReplacedN n a b (Many xs) = Many (ReplaceIndex n a b xs)
+    type ReplacedN n x b (Many xs) = Many (ReplaceIndex n x b xs)
     itemN = lens (grabN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
