@@ -91,10 +91,11 @@ injectedK :: forall m a2 a3 b2 b3.
 injectedK f = runKleisli . injected $ Kleisli f
 
 -- | A friendlier constraint synonym for 'chooseBoth'.
+-- Redundant constraint: @b3 ~ AppendUnique b1 b2@ is redundant but narrows down @b3@
 type ChooseBoth b1 b2 b3 =
     ( Diversify b1 b3
     , Diversify b2 b3
-    , b3 ~ AppendUnique b1 b2 -- ^ Redundant constraint: but narrows down @b3@
+    , b3 ~ AppendUnique b1 b2
     )
 
 -- chooseBoth ::
@@ -109,11 +110,11 @@ type ChooseBoth b1 b2 b3 =
 -- infixr 2 `chooseBoth` -- like +++
 
 -- | A friendlier constraint synonym for 'chooseFrom'.
+-- Redundant constraint: @a3 ~ Append a1 a2@ is redundant but narrows down @a3@
 type ChooseFrom a1 a2 a3 =
-    -- ( Reinterpreted a2 a3 a1 -- a1 ~ Complement a3 a2
-    ( Reinterpret a2 a3-- a1 ~ Complement a3 a2
+    ( Reinterpret a2 a3
     , a1 ~ Complement a3 a2
-    , a3 ~ Append a1 a2 -- ^ Redundant constraint: but narrows down @a3@
+    , a3 ~ Append a1 a2
     )
 
 -- -- | A friendlier constraint synonym for 'chooseBetween'.

@@ -1,5 +1,5 @@
 name:                data-diverse-lens
-version:             3.0.0.1
+version:             3.0.0.2
 synopsis:            Isos & Lens for Data.Diverse.Many and Prisms for Data.Diverse.Which
 description:         Isos & Lens for Data.Diverse.Many and Prisms for Data.Diverse.Which
                      Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master/test/Data/Diverse/Lens/ManySpec.hs) and [WhichSpec.hs](https://github.com/louispan/data-diverse-lens/blob/master/test/Data/Diverse/Lens/WhichSpec.hs) for example usages.
