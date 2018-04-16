@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 3.1.0.0
+  - Replaced `HasItem` with `Data.Has`.
+
 * 3.0.0.2
   - Fixed haddock.
 

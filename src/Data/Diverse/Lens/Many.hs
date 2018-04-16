@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -21,15 +23,16 @@ module Data.Diverse.Lens.Many (
 
     -- * Single field
     -- ** Lens for a single field
-    , HasItem(..)
-    , HasItem'(..)
-    , HasItemL(..)
-    , HasItemL'(..)
-    , HasItemTag(..)
-    , HasItemTag'(..)
+    , Has(..)
+    , item'
+    , Had(..)
+    , HasL(..)
+    , HadL(..)
+    , HasTag(..)
+    , HadTag(..)
     -- , genericItemTag
-    , HasItemN(..)
-    , HasItemN'(..)
+    , HasN(..)
+    , HadN(..)
 
     -- * Multiple fields
     -- ** Lens for multiple fields
@@ -51,6 +54,7 @@ import Control.Lens
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Generics.Product
+import Data.Has
 import Data.Kind
 import Data.Tagged
 import GHC.TypeLits
@@ -65,29 +69,25 @@ _Many' = iso fromMany' toMany'
 
 -----------------------------------------------------------------------
 
--- | 'grab' ('view' 'item') and 'replace'' ('set' 'item'') in 'Lens'' form.
+-- | Convient name for 'hasLens' to be consistent with 'Had' typeclass.
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
 -- x '^.' 'item'' \@Int \`shouldBe` 5
 -- (x '&' 'item'' \@Int .~ 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
 -- @
-class HasItem' a s where
-    item' :: Lens' s a
+item' :: Has a s => Lens' s a
+item' = hasLens
 
-    -- | Make it easy to create an instance of 'item' using 'Data.Generics.Product.Typed'
-    default item' :: (HasType a s) => Lens' s a
-    item' = typed
-
-instance UniqueMember x xs => HasItem' x (Many xs) where
-    item' = lens grab replace'
+instance UniqueMember x xs => Has x (Many xs) where
+    hasLens = lens grab replace'
 
 -- | Polymorphic version of 'item''
-class (HasItem' a s, Replaced a a s ~ s) => HasItem a s where
+class (Has a s, Replaced a a s ~ s) => Had a s where
     type Replaced a b s
     item :: Lens s (Replaced a b s) a b
 
-instance (UniqueMember x xs) => HasItem x (Many xs) where
+instance (UniqueMember x xs) => Had x (Many xs) where
     type Replaced x b (Many xs) = Many (Replace x b xs)
     item = lens grab (replace @x)
 
@@ -101,16 +101,16 @@ instance (UniqueMember x xs) => HasItem x (Many xs) where
 --
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
 -- when @l@ can actually be any kind.
--- Create instances of 'HasItemL'' using "Data.Generics.Product.Fields" as follows:
+-- Create instances of 'HasL' using "Data.Generics.Product.Fields" as follows:
 -- @
 -- instance HasField' l Foo a => itemL' l a Foo where
 --     itemL' = field @l
 -- default itemL' :: forall (l :: Symbol) a s. (HasField' l s a) => Lens' s a
 -- itemL' = field @l
-class HasItemL' (l :: k) a s | s l -> a where
+class HasL (l :: k) a s | s l -> a where
     itemL' :: Lens' s a
 
-instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many xs) where
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasL l x (Many xs) where
     itemL' = lens (grabL @l) (replaceL' @l)
 
 -- | Polymorphic version of 'itemL''
@@ -119,28 +119,28 @@ instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL' l x (Many x
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
 -- (x '&' 'itemL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
-class (HasItemL' (l :: k) a s, ReplacedL l a a s ~ s) => HasItemL (l :: k) a s | s l -> a where
+class (HasL (l :: k) a s, ReplacedL l a a s ~ s) => HadL (l :: k) a s | s l -> a where
     type ReplacedL l a b s
     itemL :: Lens s (ReplacedL l a b s) a b
 
-instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasItemL l x (Many xs) where
+instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HadL l x (Many xs) where
     type ReplacedL l x b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
     itemL = lens (grabL @l) (replaceL @l)
 
 -- | Variation of 'itemL'' that automatically tags and untags a Tagged field.
 -- @
-class HasItemL' l (Tagged l a) s => HasItemTag' (l :: k) a s where
+class HasL l (Tagged l a) s => HasTag (l :: k) a s where
     itemTag' :: Lens' s a
 
-instance HasItemL' l (Tagged l a) s => HasItemTag' (l :: k) a s where
+instance HasL l (Tagged l a) s => HasTag (l :: k) a s where
     itemTag' = itemL' @l . iso unTagged Tagged
 
 -- | Polymorphic version of 'itemTag''
 -- @
-class HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
+class HadL l (Tagged l a) s => HadTag (l :: k) a s where
     itemTag :: Lens s (ReplacedL l (Tagged l a) (Tagged l b) s) a b
 
-instance HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
+instance HadL l (Tagged l a) s => HadTag (l :: k) a s where
     itemTag = itemL @l . iso unTagged (Tagged @l)
 
 -- | 'grabN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
@@ -150,14 +150,14 @@ instance HasItemL l (Tagged l a) s => HasItemTag (l :: k) a s where
 -- x '^.' 'itemN'' \@0 \`shouldBe` 5
 -- (x '&' 'itemN'' \@0 '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
 -- @
-class HasItemN' (n :: Nat) a s | s n -> a where
+class HasN (n :: Nat) a s | s n -> a where
     itemN' :: Lens' s a
 
-instance (MemberAt n x xs) => HasItemN' n x (Many xs) where
+instance (MemberAt n x xs) => HasN n x (Many xs) where
     itemN' = lens (grabN @n) (replaceN' @n)
 
 -- | Polymorphic version of 'itemN''
-class (HasItemN' (n :: Nat) a s, ReplacedN n a a s ~ s) => HasItemN (n :: Nat) a s | s n -> a where
+class (HasN (n :: Nat) a s, ReplacedN n a a s ~ s) => HadN (n :: Nat) a s | s n -> a where
     type ReplacedN n a b s
     itemN :: Lens s (ReplacedN n a b s) a b
 
@@ -166,7 +166,7 @@ class (HasItemN' (n :: Nat) a s, ReplacedN n a a s ~ s) => HasItemN (n :: Nat) a
     itemN = position @n
 
 instance (MemberAt n x xs)
-  => HasItemN n x (Many xs) where
+  => HadN n x (Many xs) where
     type ReplacedN n x b (Many xs) = Many (ReplaceIndex n x b xs)
     itemN = lens (grabN @n) (replaceN @n)
 

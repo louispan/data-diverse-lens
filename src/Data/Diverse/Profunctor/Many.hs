@@ -34,7 +34,7 @@ import Data.Profunctor
 
 -- | A friendlier constraint synonym for 'itemized'.
 type Itemized a b s t =
-    ( HasItem a s
+    ( Had a s
     , t ~ Replaced a b s
     )
 
