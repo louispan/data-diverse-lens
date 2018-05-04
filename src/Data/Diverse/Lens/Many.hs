@@ -25,11 +25,11 @@ module Data.Diverse.Lens.Many (
     -- ** Lens for a single field
     , Has(..)
     , item'
+    , itemTag
+    , itemTag'
     , Had(..)
     , HasL(..)
     , HadL(..)
-    , HasTag(..)
-    , HadTag(..)
     -- , genericItemTag
     , HasN(..)
     , HadN(..)
@@ -91,6 +91,13 @@ instance (UniqueMember x xs) => Had x (Many xs) where
     type Replaced x b (Many xs) = Many (Replace x b xs)
     item = lens grab (replace @x)
 
+itemTag' :: forall l a s. Has (Tagged l a) s => Lens' s a
+itemTag' = item' @(Tagged l a) . iso unTagged Tagged
+
+itemTag :: forall l a b s. Had (Tagged l a) s
+    => Lens s (Replaced (Tagged l a) (Tagged l b) s) a b
+itemTag = item @(Tagged l a) . iso unTagged (Tagged @l)
+
 -- | 'grabL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
 --
 -- @
@@ -126,22 +133,6 @@ class (HasL (l :: k) a s, ReplacedL l a a s ~ s) => HadL (l :: k) a s | s l -> a
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HadL l x (Many xs) where
     type ReplacedL l x b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
     itemL = lens (grabL @l) (replaceL @l)
-
--- | Variation of 'itemL'' that automatically tags and untags a Tagged field.
--- @
-class HasL l (Tagged l a) s => HasTag (l :: k) a s where
-    itemTag' :: Lens' s a
-
-instance HasL l (Tagged l a) s => HasTag (l :: k) a s where
-    itemTag' = itemL' @l . iso unTagged Tagged
-
--- | Polymorphic version of 'itemTag''
--- @
-class HadL l (Tagged l a) s => HadTag (l :: k) a s where
-    itemTag :: Lens s (ReplacedL l (Tagged l a) (Tagged l b) s) a b
-
-instance HadL l (Tagged l a) s => HadTag (l :: k) a s where
-    itemTag = itemL @l . iso unTagged (Tagged @l)
 
 -- | 'grabN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
 --

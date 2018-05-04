@@ -2,10 +2,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Data.Diverse.Lens.WhichSpec (main, spec) where
 
@@ -52,11 +52,11 @@ spec = do
             x `shouldBe` Just (Tagged 5)
             z `shouldBe` Nothing
 
-        it "can be constructed and destructed by label with 'facetTag'" $ do
+        it "can be constructed and destructed by label with 'facetTag" $ do
             let y = review (facetTag @Bar) (5 :: Int) :: Which '[Tagged Foo Bool, Tagged Bar Int, Char, Bool, Char]
                 x = preview (facetTag @Bar) y
-                z = preview (facetTag @Foo) y
-            x `shouldBe` Just 5
+                z = preview (facetTag @Foo @Bool) y
+            x `shouldBe` Just (5 :: Int)
             z `shouldBe` Nothing
 
         it "can be constructed and destructed by index with 'facetN'" $ do

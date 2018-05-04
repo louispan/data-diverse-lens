@@ -18,11 +18,10 @@ module Data.Diverse.Lens.Which (
       -- ** Prism
       AsFacet(..)
     , MatchingFacet(..)
+    , facetTag
+    , matchingFacetTag
     , AsFacetL(..)
     , MatchingFacetL(..)
-    , AsFacetTag(..)
-    , MatchingFacetTag(..)
-    -- , genericFacetTag
     , AsFacetN(..)
     , MatchingFacetN(..)
 
@@ -98,6 +97,16 @@ class AsFacet a s => MatchingFacet a s t | s a -> t where
 instance (UniqueMember x xs, ys ~ Remove x xs) => MatchingFacet x (Which xs) (Which ys) where
     matchingFacet = trial
 
+-- | Variation of 'facet' specialized to 'Tagged' which automatically tags and untags the field.
+-- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
+-- when @l@ can actually be any kind.
+facetTag :: forall l a s. (AsFacet (Tagged l a) s) => Prism' s a
+facetTag = facet @(Tagged l a) . iso unTagged (Tagged @l)
+
+-- | Untagged version of 'MatchingFacet'
+matchingFacetTag :: forall l a s t. MatchingFacet (Tagged l a) s t => s -> Either t a
+matchingFacetTag = fmap unTagged . matchingFacet @(Tagged l a)
+
 -- | 'pickL' ('review' 'facetL') and 'trialL'' ('preview' 'facetL'') in 'Prism'' form.
 --
 -- @
@@ -118,33 +127,6 @@ class AsFacetL l a s => MatchingFacetL l a s t | s a -> t where
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs, ys ~ Remove x xs)
   => MatchingFacetL l x (Which xs) (Which ys) where
     matchingFacetL = trialL @l
-
--- | Variation of 'grabL' specialized to 'Tagged' which automatically tags and untags the field.
--- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
--- when @l@ can actually be any kind.
--- Create instances of 'AsFacetTag'' using "Data.Generics.Sum.Constructors" as follows:
--- @
--- instance AsConstructor' l Foo Foo a a => AsFacetTag l a Foo where
---     facetTag = _Ctor @l
--- @
-class AsFacetTag (l :: k) a s | s l -> a where
-    facetTag :: Prism' s a
-
--- -- | Make it easy to create an instance of 'AsFacetTag' using 'Data.Generics.Sum.Constructors'
--- -- NB. This is not a default signature for AsFacetTag, as this makes GHC think that l must be type 'Symbol', when actually @l@ can be any kind @k@
--- genericFacetTag :: forall l a s proxy. (AsConstructor l s s a a) => Prism' s a
--- genericFacetTag = _Ctor @l
-
-instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs) => AsFacetTag l x (Which xs) where
-    facetTag = prism' (pickTag @l) (trialTag' @l)
-
--- | Untagged version of 'MatchingFacet'
-class AsFacetTag l a s => MatchingFacetTag l a s t | l s a -> t where
-    matchingFacetTag :: s -> Either t a
-
-instance (UniqueLabelMember l xs, Tagged l x ~ KindAtLabel l xs, ys ~ Remove (Tagged l x) xs)
-  => MatchingFacetTag l x (Which xs) (Which ys) where
-    matchingFacetTag = trialTag @l
 
 -- | 'pickN' ('review' 'facetN') and 'trialN' ('preview' 'facetN') in 'Prism'' form.
 --

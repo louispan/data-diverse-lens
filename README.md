@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 3.1.1.0
+  - `itemTag` only requires `Has` and likewise `facetTag` only requires `AsFacet`.
+
 * 3.1.0.0
   - Replaced `HasItem` with `Data.Has`.
 
