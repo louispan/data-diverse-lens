@@ -32,55 +32,55 @@ spec = do
             x `shouldBe` review _Many' t
             t `shouldBe` view _Many' x
 
-        it "has getter/setter lens using 'item''" $ do
+        it "has getter/setter lens using 'piece''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
-            x ^. item' @Int `shouldBe` 5
-            (x & item' @Int .~ 6) `shouldBe` (6 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
-            x ^. item' @Bool `shouldBe` False
-            (x & item' @Bool .~ True) `shouldBe` (5 :: Int) ./ True ./ 'X' ./ Just 'O' ./ nil
-            x ^. item' @Char `shouldBe` 'X'
-            x ^. item' @(Maybe Char) `shouldBe` Just 'O'
+            x ^. piece' @Int `shouldBe` 5
+            (x & piece' @Int .~ 6) `shouldBe` (6 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
+            x ^. piece' @Bool `shouldBe` False
+            (x & piece' @Bool .~ True) `shouldBe` (5 :: Int) ./ True ./ 'X' ./ Just 'O' ./ nil
+            x ^. piece' @Char `shouldBe` 'X'
+            x ^. piece' @(Maybe Char) `shouldBe` Just 'O'
 
-        it "has polymorphic getter/setter lens using 'item'" $ do
+        it "has polymorphic getter/setter lens using 'piece'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil
-            (x & item @(Maybe Char) .~ Just 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
-            (x & item @Int .~ 'Z') `shouldBe` 'Z' ./ False ./ 'X' ./ Just 'O' ./ nil
-            (x & item @Bool .~ 'Z') `shouldBe` (5 :: Int) ./ 'Z' ./ 'X' ./ Just 'O' ./ nil
-            (x & item @Char .~ True) `shouldBe` (5 :: Int) ./ False ./ True ./ Just 'O' ./ nil
-            (x & item @(Maybe Char) .~ 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ 'P' ./ nil
+            (x & piece @(Maybe Char) .~ Just 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'P' ./ nil
+            (x & piece @Int .~ 'Z') `shouldBe` 'Z' ./ False ./ 'X' ./ Just 'O' ./ nil
+            (x & piece @Bool .~ 'Z') `shouldBe` (5 :: Int) ./ 'Z' ./ 'X' ./ Just 'O' ./ nil
+            (x & piece @Char .~ True) `shouldBe` (5 :: Int) ./ False ./ True ./ Just 'O' ./ nil
+            (x & piece @(Maybe Char) .~ 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ 'P' ./ nil
 
-        it "has getter/setter lens using 'itemL''" $ do
+        it "has getter/setter lens using 'pieceL''" $ do
             let x = (5 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ nil
-            x ^. itemL' @Foo `shouldBe` Tagged @Foo False
-            (x & itemL' @Foo .~ Tagged @Foo True) `shouldBe` (5 :: Int) ./ Tagged @Foo True ./ Tagged @Bar 'X' ./ nil
+            x ^. pieceL' @Foo `shouldBe` Tagged @Foo False
+            (x & pieceL' @Foo .~ Tagged @Foo True) `shouldBe` (5 :: Int) ./ Tagged @Foo True ./ Tagged @Bar 'X' ./ nil
 
-        it "has polymorphic getter/setter lens using 'itemL'" $ do
+        it "has polymorphic getter/setter lens using 'pieceL'" $ do
             let x = (5 :: Int) ./ Tagged @Foo False ./ Tagged @Bar 'X' ./ nil
-            (x & itemL @Foo .~ "foo") `shouldBe` (5 :: Int) ./ "foo" ./ Tagged @Bar 'X' ./ nil
+            (x & pieceL @Foo .~ "foo") `shouldBe` (5 :: Int) ./ "foo" ./ Tagged @Bar 'X' ./ nil
 
-        it "has getter/setter lens for duplicate fields using 'itemN''" $ do
+        it "has getter/setter lens for duplicate fields using 'pieceN''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @0 `shouldBe` 5
-            (x & itemN' @0 .~ 6) `shouldBe` (6 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @1 `shouldBe` False
-            (x & itemN' @1 .~ True) `shouldBe` (5 :: Int) ./ True ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @2 `shouldBe` 'X'
-            (x & itemN' @2 .~ 'O') `shouldBe` (5 :: Int) ./ False ./ 'O' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @3 `shouldBe` Just 'O'
-            (x & itemN' @3 .~ Just 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'P' ./ (6 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @4 `shouldBe` 6
-            (x & itemN' @4 .~ 7) `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (7 :: Int) ./ Just 'A' ./ nil
-            x ^. itemN' @5 `shouldBe` Just 'A'
-            (x & itemN' @5 .~ Just 'B') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'B' ./ nil
+            x ^. pieceN' @0 `shouldBe` 5
+            (x & pieceN' @0 .~ 6) `shouldBe` (6 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            x ^. pieceN' @1 `shouldBe` False
+            (x & pieceN' @1 .~ True) `shouldBe` (5 :: Int) ./ True ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            x ^. pieceN' @2 `shouldBe` 'X'
+            (x & pieceN' @2 .~ 'O') `shouldBe` (5 :: Int) ./ False ./ 'O' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            x ^. pieceN' @3 `shouldBe` Just 'O'
+            (x & pieceN' @3 .~ Just 'P') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'P' ./ (6 :: Int) ./ Just 'A' ./ nil
+            x ^. pieceN' @4 `shouldBe` 6
+            (x & pieceN' @4 .~ 7) `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (7 :: Int) ./ Just 'A' ./ nil
+            x ^. pieceN' @5 `shouldBe` Just 'A'
+            (x & pieceN' @5 .~ Just 'B') `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'B' ./ nil
 
-        it "has polymorphic getter/setter lens for duplicate fields using 'itemN'" $ do
+        it "has polymorphic getter/setter lens for duplicate fields using 'pieceN'" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & itemN @0 .~ "Foo") `shouldBe` "Foo" ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & itemN @1 .~ "Foo") `shouldBe` (5 :: Int) ./ "Foo" ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & itemN @2 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ "Foo" ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & itemN @3 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ "Foo" ./ (6 :: Int) ./ Just 'A' ./ nil
-            (x & itemN @4 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ "Foo" ./ Just 'A' ./ nil
-            (x & itemN @5 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ "Foo" ./ nil
+            (x & pieceN @0 .~ "Foo") `shouldBe` "Foo" ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & pieceN @1 .~ "Foo") `shouldBe` (5 :: Int) ./ "Foo" ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & pieceN @2 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ "Foo" ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & pieceN @3 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ "Foo" ./ (6 :: Int) ./ Just 'A' ./ nil
+            (x & pieceN @4 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ "Foo" ./ Just 'A' ./ nil
+            (x & pieceN @5 .~ "Foo") `shouldBe` (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ "Foo" ./ nil
 
         it "has getter/setter lens for multiple fields using 'project''" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ nil

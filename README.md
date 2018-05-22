@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 4.0.0.0
+  - Renamed `itemXXX` to `pieceXXX`, `Itemized` to `Pieced`, `itemizedXXX` to `piecedXXX`.
+
 * 3.1.1.0
   - `itemTag` only requires `Has` and likewise `facetTag` only requires `AsFacet`.
 

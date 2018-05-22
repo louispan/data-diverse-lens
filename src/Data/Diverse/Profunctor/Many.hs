@@ -10,9 +10,9 @@
 
 module Data.Diverse.Profunctor.Many (
       -- * Combinators similar to Profunctor Strong
-      Itemized
-    , itemized
-    , itemizedK
+      Pieced
+    , pieced
+    , piecedK
     , Projected
     , projected
     , projectedK
@@ -32,30 +32,30 @@ import Data.Diverse.Many
 import Data.Diverse.TypeLevel
 import Data.Profunctor
 
--- | A friendlier constraint synonym for 'itemized'.
-type Itemized a b s t =
+-- | A friendlier constraint synonym for 'pieced'.
+type Pieced a b s t =
     ( Had a s
     , t ~ Replaced a b s
     )
 
 -- | Like 'Strong' or 'Arrow' but lifting into 'Many'
-itemized ::
+pieced ::
     forall w a b s t.
     ( Profunctor w
     , Strong w
-    , Itemized a b s t
+    , Pieced a b s t
     )
     => w a b -> w s t
-itemized w = dimap (\c -> (view item' c, c)) (\(b, c) -> set (item @a) b c) (first' w)
+pieced w = dimap (\c -> (view piece' c, c)) (\(b, c) -> set (piece @a) b c) (first' w)
 
--- | 'itemized' under 'Kleisli'
-itemizedK ::
+-- | 'pieced' under 'Kleisli'
+piecedK ::
     forall m a b s t.
     ( Monad m
-    , Itemized a b s t
+    , Pieced a b s t
     )
     => (a -> m b) -> (s -> m t)
-itemizedK f = runKleisli . itemized $ Kleisli f
+piecedK f = runKleisli . pieced $ Kleisli f
 
 -- | A friendlier constraint synonym for 'projected'.
 type Projected a1 a2 b1 b2 =

@@ -24,9 +24,9 @@ module Data.Diverse.Lens.Many (
     -- * Single field
     -- ** Lens for a single field
     , Has(..)
-    , item'
-    , itemTag
-    , itemTag'
+    , piece'
+    , pieceTag
+    , pieceTag'
     , Had(..)
     , HasL(..)
     , HadL(..)
@@ -73,93 +73,93 @@ _Many' = iso fromMany' toMany'
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
--- x '^.' 'item'' \@Int \`shouldBe` 5
--- (x '&' 'item'' \@Int .~ 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
+-- x '^.' 'piece'' \@Int \`shouldBe` 5
+-- (x '&' 'piece'' \@Int .~ 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'
 -- @
-item' :: Has a s => Lens' s a
-item' = hasLens
+piece' :: Has a s => Lens' s a
+piece' = hasLens
 
 instance UniqueMember x xs => Has x (Many xs) where
     hasLens = lens grab replace'
 
--- | Polymorphic version of 'item''
+-- | Polymorphic version of 'piece''
 class (Has a s, Replaced a a s ~ s) => Had a s where
     type Replaced a b s
-    item :: Lens s (Replaced a b s) a b
+    piece :: Lens s (Replaced a b s) a b
 
 instance (UniqueMember x xs) => Had x (Many xs) where
     type Replaced x b (Many xs) = Many (Replace x b xs)
-    item = lens grab (replace @x)
+    piece = lens grab (replace @x)
 
-itemTag' :: forall l a s. Has (Tagged l a) s => Lens' s a
-itemTag' = item' @(Tagged l a) . iso unTagged Tagged
+pieceTag' :: forall l a s. Has (Tagged l a) s => Lens' s a
+pieceTag' = piece' @(Tagged l a) . iso unTagged Tagged
 
-itemTag :: forall l a b s. Had (Tagged l a) s
+pieceTag :: forall l a b s. Had (Tagged l a) s
     => Lens s (Replaced (Tagged l a) (Tagged l b) s) a b
-itemTag = item @(Tagged l a) . iso unTagged (Tagged @l)
+pieceTag = piece @(Tagged l a) . iso unTagged (Tagged @l)
 
--- | 'grabL' ('view' 'itemL') and 'replaceL' ('set' 'itemL') in 'Lens'' form.
+-- | 'grabL' ('view' 'pieceL') and 'replaceL' ('set' 'pieceL') in 'Lens'' form.
 --
 -- @
 -- let x = (5 :: Int) './' Tagged \@Foo False './' Tagged \@Bar \'X' './' 'nil'
--- x '^.' 'itemL'' \@Foo \`shouldBe` Tagged \@Foo False
--- (x '&' 'itemL'' \@Foo '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
+-- x '^.' 'pieceL'' \@Foo \`shouldBe` Tagged \@Foo False
+-- (x '&' 'pieceL'' \@Foo '.~' Tagged \@Foo True) \`shouldBe` (5 :: Int) './' Tagged \@Foo True './' Tagged \@Bar \'X' './' 'nil'
 -- @
 --
 -- A default implementation using generics is not provided as it make GHC think that @l@ must be type @Symbol@
 -- when @l@ can actually be any kind.
 -- Create instances of 'HasL' using "Data.Generics.Product.Fields" as follows:
 -- @
--- instance HasField' l Foo a => itemL' l a Foo where
---     itemL' = field @l
--- default itemL' :: forall (l :: Symbol) a s. (HasField' l s a) => Lens' s a
--- itemL' = field @l
+-- instance HasField' l Foo a => pieceL' l a Foo where
+--     pieceL' = field @l
+-- default pieceL' :: forall (l :: Symbol) a s. (HasField' l s a) => Lens' s a
+-- pieceL' = field @l
 class HasL (l :: k) a s | s l -> a where
-    itemL' :: Lens' s a
+    pieceL' :: Lens' s a
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HasL l x (Many xs) where
-    itemL' = lens (grabL @l) (replaceL' @l)
+    pieceL' = lens (grabL @l) (replaceL' @l)
 
--- | Polymorphic version of 'itemL''
+-- | Polymorphic version of 'pieceL''
 --
 -- @
 -- let x = (5 :: Int) './' Tagged @Foo False './' Tagged \@Bar \'X' './' 'nil'
--- (x '&' 'itemL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
+-- (x '&' 'pieceL' \@Foo '.~' \"foo") \`shouldBe` (5 :: Int) './' \"foo" './' Tagged \@Bar \'X' './' 'nil'
 -- @
 class (HasL (l :: k) a s, ReplacedL l a a s ~ s) => HadL (l :: k) a s | s l -> a where
     type ReplacedL l a b s
-    itemL :: Lens s (ReplacedL l a b s) a b
+    pieceL :: Lens s (ReplacedL l a b s) a b
 
 instance (UniqueLabelMember l xs, x ~ KindAtLabel l xs) => HadL l x (Many xs) where
     type ReplacedL l x b (Many xs) = Many (Replace (KindAtLabel l xs) b xs)
-    itemL = lens (grabL @l) (replaceL @l)
+    pieceL = lens (grabL @l) (replaceL @l)
 
--- | 'grabN' ('view' 'item') and 'replaceN'' ('set' 'item'') in 'Lens'' form.
+-- | 'grabN' ('view' 'piece') and 'replaceN'' ('set' 'piece'') in 'Lens'' form.
 --
 -- @
 -- let x = (5 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' ./ nil
--- x '^.' 'itemN'' \@0 \`shouldBe` 5
--- (x '&' 'itemN'' \@0 '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
+-- x '^.' 'pieceN'' \@0 \`shouldBe` 5
+-- (x '&' 'pieceN'' \@0 '.~' 6) \`shouldBe` (6 :: Int) './' False './' \'X' './' Just \'O' './' (6 :: Int) './' Just \'A' './' 'nil'
 -- @
 class HasN (n :: Nat) a s | s n -> a where
-    itemN' :: Lens' s a
+    pieceN' :: Lens' s a
 
 instance (MemberAt n x xs) => HasN n x (Many xs) where
-    itemN' = lens (grabN @n) (replaceN' @n)
+    pieceN' = lens (grabN @n) (replaceN' @n)
 
--- | Polymorphic version of 'itemN''
+-- | Polymorphic version of 'pieceN''
 class (HasN (n :: Nat) a s, ReplacedN n a a s ~ s) => HadN (n :: Nat) a s | s n -> a where
     type ReplacedN n a b s
-    itemN :: Lens s (ReplacedN n a b s) a b
+    pieceN :: Lens s (ReplacedN n a b s) a b
 
-    -- | Make it easy to create an instance of 'itemN' using 'Data.Generics.Product.Positions'
-    default itemN :: (HasPosition n s (ReplacedN n a b s) a b) => Lens s (ReplacedN n a b s) a b
-    itemN = position @n
+    -- | Make it easy to create an instance of 'pieceN' using 'Data.Generics.Product.Positions'
+    default pieceN :: (HasPosition n s (ReplacedN n a b s) a b) => Lens s (ReplacedN n a b s) a b
+    pieceN = position @n
 
 instance (MemberAt n x xs)
   => HadN n x (Many xs) where
     type ReplacedN n x b (Many xs) = Many (ReplaceIndex n x b xs)
-    itemN = lens (grabN @n) (replaceN @n)
+    pieceN = lens (grabN @n) (replaceN @n)
 
 -----------------------------------------------------------------------
 
