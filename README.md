@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 4.1.0.0
+  - Removed generic-lens dependency - didn't really use it.
+
 * 4.0.0.0
   - Renamed `itemXXX` to `pieceXXX`, `Itemized` to `Pieced`, `itemizedXXX` to `piecedXXX`.
 

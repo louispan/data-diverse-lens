@@ -40,7 +40,6 @@ module Data.Diverse.Lens.Which (
 import Control.Lens
 import Data.Diverse.TypeLevel
 import Data.Diverse.Which
-import Data.Generics.Sum
 import Data.Kind
 import Data.Tagged
 import Data.Void
@@ -62,9 +61,9 @@ import GHC.TypeLits
 class AsFacet a s where
     facet :: Prism' s a
 
-    -- | Make it easy to create an instance of 'AsFacet' using 'Data.Generics.Sum.Typed'
-    default facet :: (AsType a s) => Prism' s a
-    facet = _Typed
+    -- -- | Make it easy to create an instance of 'AsFacet' using 'Data.Generics.Sum.Typed'
+    -- default facet :: (AsType a s) => Prism' s a
+    -- facet = _Typed
 
 instance AsFacet Void (Which '[]) where
     facet = prism' absurd impossible

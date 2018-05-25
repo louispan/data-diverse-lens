@@ -53,7 +53,7 @@ module Data.Diverse.Lens.Many (
 import Control.Lens
 import Data.Diverse.Many
 import Data.Diverse.TypeLevel
-import Data.Generics.Product
+-- import Data.Generics.Product
 import Data.Has
 import Data.Kind
 import Data.Tagged
@@ -152,9 +152,9 @@ class (HasN (n :: Nat) a s, ReplacedN n a a s ~ s) => HadN (n :: Nat) a s | s n 
     type ReplacedN n a b s
     pieceN :: Lens s (ReplacedN n a b s) a b
 
-    -- | Make it easy to create an instance of 'pieceN' using 'Data.Generics.Product.Positions'
-    default pieceN :: (HasPosition n s (ReplacedN n a b s) a b) => Lens s (ReplacedN n a b s) a b
-    pieceN = position @n
+    -- -- | Make it easy to create an instance of 'pieceN' using 'Data.Generics.Product.Positions'
+    -- default pieceN :: (HasPosition n s (ReplacedN n a b s) a b) => Lens s (ReplacedN n a b s) a b
+    -- pieceN = position @n
 
 instance (MemberAt n x xs)
   => HadN n x (Many xs) where

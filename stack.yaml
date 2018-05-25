@@ -43,7 +43,6 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - data-diverse-4.0.0.0
-- generic-lens-0.5.0.0
 - data-has-0.3.0.0
 # - containers-0.5.10.2
 
