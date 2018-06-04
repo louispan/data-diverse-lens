@@ -23,14 +23,12 @@ module Data.Diverse.Profunctor.Which (
     , chooseBetweenK
     , thenChoose
     , thenChooseK
-    , also
-    , alternatively
+    , chooseWith
     -- , (+||+)
     -- , (>||>)
     -- , (<||<)
     ) where
 
-import Control.Applicative
 import Control.Arrow
 import qualified Control.Category as C
 import Control.Lens
@@ -207,11 +205,7 @@ infixr 2 `thenChooseK` -- like +++
 
 ------------------------------------------
 
-also :: (Semigroup (f (Which a3)), Functor f, ChooseBoth a1 a2 a3) => f (Which a1) -> f (Which a2) -> f (Which a3)
-also x y = (diversify <$> x) <> (diversify <$> y)
-infixr 6 `also` -- like mappend
-
-alternatively :: (Alternative f, ChooseBoth a1 a2 a3) => f (Which a1) -> f (Which a2) -> f (Which a3)
-alternatively x y = (diversify <$> x) <|> (diversify <$> y)
-infixl 3 `alternatively` -- like <|>
+chooseWith :: (Semigroup (f (Which a3)), Functor f, ChooseBoth a1 a2 a3) => (f (Which a3) -> f (Which a3) -> f (Which a3)) -> f (Which a1) -> f (Which a2) -> f (Which a3)
+chooseWith f x y = (diversify <$> x) `f` (diversify <$> y)
+infixr 6 `chooseWith` -- like mappend
 
