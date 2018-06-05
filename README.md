@@ -7,6 +7,9 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 4.2.0.1
+  - Missed removing Semigroup constraint from `chooseWith`
+
 * 4.2.0.0
   - Replaced `also` and `alternatively` with `chooseWith`
 

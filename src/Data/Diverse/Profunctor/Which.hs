@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -33,7 +31,6 @@ import Control.Arrow
 import qualified Control.Category as C
 import Control.Lens
 import Data.Diverse.Lens
-import Data.Semigroup
 
 -- | A friendlier constraint synonym for 'faceted'.
 type Faceted a as x b bs y =
@@ -205,7 +202,8 @@ infixr 2 `thenChooseK` -- like +++
 
 ------------------------------------------
 
-chooseWith :: (Semigroup (f (Which a3)), Functor f, ChooseBoth a1 a2 a3) => (f (Which a3) -> f (Which a3) -> f (Which a3)) -> f (Which a1) -> f (Which a2) -> f (Which a3)
+chooseWith :: (Functor f, ChooseBoth a1 a2 a3)
+    => (f (Which a3) -> f (Which a3) -> f (Which a3)) -> f (Which a1) -> f (Which a2) -> f (Which a3)
 chooseWith f x y = (diversify <$> x) `f` (diversify <$> y)
 infixr 6 `chooseWith` -- like mappend
 
