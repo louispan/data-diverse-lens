@@ -22,9 +22,6 @@ module Data.Diverse.Profunctor.Which (
     , thenChoose
     , thenChooseK
     , chooseWith
-    -- , (+||+)
-    -- , (>||>)
-    -- , (<||<)
     ) where
 
 import Control.Arrow
@@ -93,17 +90,6 @@ type ChooseBoth b1 b2 b3 =
     , b3 ~ AppendUnique b1 b2
     )
 
--- chooseBoth ::
---     ( C.Category w
---     , Strong w
---     , ChooseBoth b1 b2 b3
---     )
---     => w a (Which b1)
---     -> w a (Which b2)
---     -> w a (Which b3, Which b3)
--- chooseBoth x y = lmap (\a -> (a, a)) (first' (rmap diversify x)) C.>>> (second' (rmap diversify y))
--- infixr 2 `chooseBoth` -- like +++
-
 -- | A friendlier constraint synonym for 'chooseFrom'.
 -- Redundant constraint: @a3 ~ Append a1 a2@ is redundant but narrows down @a3@
 type ChooseFrom a1 a2 a3 =
@@ -111,12 +97,6 @@ type ChooseFrom a1 a2 a3 =
     , a1 ~ Complement a3 a2
     , a3 ~ Append a1 a2
     )
-
--- -- | A friendlier constraint synonym for 'chooseBetween'.
--- type ChooseBetween a1 a2 a3 b1 b2 b3 =
---     ( ChooseFrom a1 a2 a3
---     , ChooseBoth b1 b2 b3
---     )
 
 -- | Split the input between the two argument arrows, retagging and merging their outputs.
 -- The output is merged into a 'Which' of unique types.
@@ -149,17 +129,6 @@ chooseBetweenK :: forall m a1 a2 a3 b1 b2 b3.
 chooseBetweenK f g = runKleisli $ chooseBetween (Kleisli f) (Kleisli g)
 infixr 2 `chooseBetweenK` -- like +++
 
--- (+||+) ::
---     ( C.Category w
---     , Choice w
---     , ChooseBetween a1 a2 a3 b1 b2 b3
---     )
---     => w (Which a1) (Which b1)
---     -> w (Which a2) (Which b2)
---     -> w (Which a3) (Which b3)
--- (+||+) = chooseBetween
--- infixr 2 +||+ -- like +++
-
 -- | Left-to-right chaining of arrows one after another, where left over possibilities not handled
 -- by the right arrow is forwarded to the output.
 -- It is a compile error if the types are not distinct in each of the argument arrow inputs,
@@ -187,23 +156,9 @@ thenChooseK :: forall m a a2 b1 b2 b3.
 thenChooseK f g = runKleisli $ thenChoose (Kleisli f) (Kleisli g)
 infixr 2 `thenChooseK` -- like +++
 
--- -- | right-to-left version of '(>||>)'
--- (<||<)
---     :: forall w a a2 b1 b2 b3.
---        ( C.Category w
---        , Choice w
---        , Injected a2 b1 b2 b3
---        )
---     => w (Which a2) (Which b2)
---     -> w a (Which b1)
---     -> w a (Which b3)
--- (<||<) = flip (>||>)
--- infixr 2 <||< -- like >||>
-
 ------------------------------------------
 
 chooseWith :: (Functor f, ChooseBoth a1 a2 a3)
     => (f (Which a3) -> f (Which a3) -> f (Which a3)) -> f (Which a1) -> f (Which a2) -> f (Which a3)
 chooseWith f x y = (diversify <$> x) `f` (diversify <$> y)
 infixr 6 `chooseWith` -- like mappend
-
