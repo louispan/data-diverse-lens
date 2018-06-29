@@ -7,6 +7,10 @@ Refer to [ManySpec.hs](https://github.com/louispan/data-diverse-lens/blob/master
 
 # Changelog
 
+* 4.3.0.0
+  - Replaced `piece'` with `hasLens`, `piece` with `hadLens`
+  - Replaced `pieceX'` with `hasX`, `pieceX` `hadX`
+
 * 4.2.0.1
   - Missed removing Semigroup constraint from `chooseWith`
 
